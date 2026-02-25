@@ -1,0 +1,29 @@
+
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imgcls-ft"
+version = "0.1.0"
+description = "Image classification via fine-tuning torchvision pretrained models (extracted from a notebook)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "torch",
+  "torchvision",
+  "tqdm",
+  "numpy",
+  "pillow",
+]
+
+[project.optional-dependencies]
+dev = ["black", "ruff"]
+
+[project.scripts]
+imgcls-train = "imgcls_ft.cli.train:main"
+imgcls-predict = "imgcls_ft.cli.predict:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["imgcls_ft*"]
