@@ -6,11 +6,11 @@ from pathlib import Path
 
 import torch
 
-from imgcls_ft.config import DataConfig, TrainConfig
-from imgcls_ft.data import build_dataloaders
-from imgcls_ft.engine import fit
-from imgcls_ft.model import create_model, freeze_backbone, num_trainable_params
-from imgcls_ft.utils import get_device, set_seed
+from visionbox.config import DataConfig, TrainConfig
+from visionbox.data import build_dataloaders
+from visionbox.engine import fit
+from visionbox.model import create_model, freeze_backbone, num_trainable_params
+from visionbox.utils import get_device, set_seed
 
 
 def parse_args():

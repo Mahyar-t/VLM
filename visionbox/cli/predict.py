@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from imgcls_ft.predict import predict_image
+from visionbox.predict import predict_image
 
 
 def parse_args():

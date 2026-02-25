@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Utility that invokes the imgcls-ft Python CLI commands (imgcls-predict, imgcls-train)
+ * Utility that invokes the visionbox Python CLI commands (visionbox-predict, visionbox-train)
  * via ProcessBuilder and parses their output.
  */
 @Component
@@ -21,7 +21,7 @@ public class PythonBridge {
     // ── predict ──────────────────────────────────────────────────────────────
 
     /**
-     * Runs:  imgcls-predict --image <path> --weights <weights> --class-map <classMap>
+     * Runs:  visionbox-predict --image <path> --weights <weights> --class-map <classMap>
      *                       [--model <model>] [--device <device>] [--topk <topk>]
      *
      * @return list of maps: [{class: "cat", probability: 0.92}, ...]
@@ -33,7 +33,7 @@ public class PythonBridge {
                                               String device,
                                               int topk) throws Exception {
         // Resolve the script path based on the configured pythonExec
-        String script = resolveScriptPath("imgcls-predict");
+        String script = resolveScriptPath("visionbox-predict");
         List<String> cmd = new ArrayList<>(List.of(
                 script,
                 "--image", imagePath
@@ -54,7 +54,7 @@ public class PythonBridge {
 
         String stdout = runProcess(cmd);
 
-        // imgcls-predict prints lines like:  class_name\t0.9234
+        // visionbox-predict prints lines like:  class_name	0.9234
         List<Map<String, Object>> results = new ArrayList<>();
         for (String line : stdout.split("\n")) {
             line = line.strip();
@@ -73,7 +73,7 @@ public class PythonBridge {
     // ── train ────────────────────────────────────────────────────────────────
 
     /**
-     * Runs:  imgcls-train --data-dir <dataDir> [--model <model>] [--epochs <n>] ...
+     * Runs:  visionbox-train --data-dir <dataDir> [--model <model>] [--epochs <n>] ...
      *
      * @return the raw stdout output of the training process
      */
@@ -85,7 +85,7 @@ public class PythonBridge {
                         String device,
                         String checkpoint,
                         String classMapOut) throws Exception {
-        String script = resolveScriptPath("imgcls-train");
+        String script = resolveScriptPath("visionbox-train");
         List<String> cmd = new ArrayList<>(List.of(
                 script,
                 "--data-dir", dataDir
