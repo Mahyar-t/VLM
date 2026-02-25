@@ -4,823 +4,286 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisionBox API</title>
+    <title>VisionBox API - Exploration</title>
+    <link rel="icon" type="image/png" href="/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scrollbar-gutter: stable;
         }
 
         :root {
-            --bg: #0b0f1a;
-            --surface: #131826;
-            --surface-hover: #1a2035;
-            --border: rgba(255, 255, 255, .06);
-            --accent: #6c5ce7;
-            --accent-glow: rgba(108, 92, 231, .35);
-            --accent-light: #a29bfe;
-            --success: #00cec9;
-            --danger: #ff7675;
-            --text: #e4e8f1;
-            --muted: #8892a8;
-            --radius: 14px;
+            --bg: #DAE4E8;
+            --primary: #5FD1D4;
+            --secondary: #82D2D5;
+            --dark: #1C3342;
+            --white: #FFFFFF;
+            --sidebar-width: 280px;
         }
 
         body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--dark);
+            background-image:
+                linear-gradient(rgba(28, 51, 66, 0.5), rgba(28, 51, 66, 0.5)),
+                url('hero-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--white);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* ── Header ── */
-        header {
-            width: 100%;
-            padding: 2rem 0 0;
-            text-align: center;
-        }
-
-        header h1 {
-            font-size: 2.4rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-light), var(--accent));
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -.5px;
-        }
-
-        header p {
-            color: var(--muted);
-            margin-top: .5rem;
-            font-size: .95rem;
-        }
-
-        /* ── Container ── */
-        .container {
-            max-width: 920px;
-            width: 100%;
-            padding: 2rem 1.5rem 4rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        /* ── Cards ── */
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1.6rem 1.8rem;
-            transition: border-color .2s;
-        }
-
-        .card:hover {
-            border-color: rgba(108, 92, 231, .2);
-        }
-
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-        }
-
-        .badge {
-            font-size: .65rem;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 6px;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-        }
-
-        .badge-get {
-            background: rgba(0, 206, 201, .15);
-            color: var(--success);
-        }
-
-        .badge-post {
-            background: rgba(108, 92, 231, .15);
-            color: var(--accent-light);
-        }
-
-        /* ── Endpoint list ── */
-        .endpoints {
-            display: flex;
-            flex-direction: column;
-            gap: .75rem;
-        }
-
-        .endpoint {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
-            background: var(--surface-hover);
-            border-radius: 10px;
-            padding: .65rem 1rem;
-            font-size: .88rem;
-        }
-
-        .endpoint code {
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
-            font-size: .85rem;
-            color: var(--accent-light);
-        }
-
-        .endpoint span {
-            color: var(--muted);
-        }
-
-        /* ── Drop zone ── */
-        .upload-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .drop-zone {
-            width: 250px;
-            height: 250px;
-            border: 2px dashed var(--muted);
-            border-radius: var(--radius);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: var(--muted);
-            transition: all .2s;
-            position: relative;
-            background: rgba(255, 255, 255, .01);
-            cursor: pointer;
-        }
-
-        .drop-zone:hover,
-        .drop-zone.dragover {
-            border-color: var(--accent-light);
-            background: rgba(108, 92, 231, .08);
-            color: var(--accent-light);
-        }
-
-        .drop-zone svg {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 1rem;
-            opacity: .6;
-        }
-
-        /* ── Image preview ── */
-        .preview-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: none;
-            border-radius: var(--radius);
-            overflow: hidden;
-            background: var(--bg);
-        }
-
-        .preview-container.active {
-            display: block;
-        }
-
-        .preview-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .remove-photo-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 28px;
-            height: 28px;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 14px;
-            cursor: pointer;
+            overflow-x: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
         }
 
-        .remove-photo-btn:hover {
-            background: rgba(255, 118, 117, 0.9);
-        }
-
-        /* ── Predict form ── */
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: .75rem 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .form-grid label {
-            font-size: .78rem;
-            font-weight: 500;
-            color: var(--muted);
-            display: flex;
-            flex-direction: column;
-            gap: .3rem;
-        }
-
-        .form-grid input,
-        .form-grid select {
-            background: var(--surface-hover);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: .55rem .75rem;
-            color: var(--text);
-        }
-
-        .form-grid input:focus,
-        .form-grid select:focus {
-            border-color: var(--accent);
-        }
-
-        .divider {
-            margin: 1.5rem 0;
-            border: 0;
-            border-top: 1px solid var(--border);
-        }
-
-        .section-title {
-            font-size: .85rem;
-            font-weight: 600;
-            color: var(--muted);
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: .5rem;
-            background: linear-gradient(135deg, var(--accent), #7c5ce7);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            padding: .8rem 2rem;
-            font-size: .95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform .12s, box-shadow .2s;
-            box-shadow: 0 4px 24px var(--accent-glow);
-            margin: 2rem auto 0;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 30px var(--accent-glow);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: .5;
-            cursor: not-allowed;
-        }
-
-        .btn-container {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-
-        /* ── Results ── */
-        .results {
-            margin-top: 2rem;
-            background: var(--surface-hover);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1rem;
-        }
-
-        .results table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .results th,
-        .results td {
-            text-align: left;
-            padding: .55rem .75rem;
-            font-size: .85rem;
-        }
-
-        .results th {
-            color: var(--muted);
-            font-weight: 500;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .results td {
-            border-bottom: 1px solid var(--border);
-        }
-
-        .prob-bar {
-            display: inline-block;
-            height: 6px;
-            border-radius: 3px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-light));
-            margin-right: .5rem;
-            vertical-align: middle;
-        }
-
-        .skeleton-row td {
-            color: var(--muted);
-            opacity: 0.5;
-        }
-
-        .skeleton-bar {
-            display: inline-block;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--surface-hover);
-            width: 50px;
-            margin-right: .5rem;
-            vertical-align: middle;
-        }
-
-        .error-box {
-            background: rgba(255, 118, 117, .1);
-            border: 1px solid rgba(255, 118, 117, .3);
-            border-radius: 8px;
-            padding: .75rem 1rem;
-            color: var(--danger);
-            font-size: .85rem;
-            margin-top: 1rem;
-            display: none;
-        }
-
-        .error-box.visible {
-            display: block;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 255, 255, .3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin .6s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ── Footer ── */
-        footer {
-            text-align: center;
-            color: var(--muted);
-            font-size: .75rem;
-            padding: 2rem;
-        }
-
-        .section {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
+        @keyframes slideUp {
             from {
-                opacity: 0;
-                transform: translateY(5px);
+                transform: translateY(15px);
             }
 
             to {
-                opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* ── Navigation ── */
-        .nav-tabs {
+        /* -- Sidebar Navigation -- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: calc(-1 * var(--sidebar-width));
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: rgba(28, 51, 66, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: var(--white);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            padding: 2rem 2rem 4rem;
             display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.active {
+            transform: translateX(var(--sidebar-width));
+        }
+
+        .sidebar-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
+            margin-top: 4rem;
+            margin-bottom: 3rem;
             gap: 1rem;
-            margin-top: 1.5rem;
         }
 
-        .nav-tab {
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            color: var(--muted);
+        .sidebar-header img {
+            height: 100px;
+            filter: drop-shadow(0 0 15px rgba(95, 209, 212, 0.4));
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar-link {
             text-decoration: none;
-            font-weight: 500;
-            font-size: 0.9rem;
-            border: 1px solid transparent;
-            transition: all 0.2s;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-link:hover {
+            color: var(--white);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .sidebar-link.active {
+            color: var(--primary);
+            background: rgba(95, 209, 212, 0.15);
+            border-left: 3px solid var(--primary);
+        }
+
+        .sidebar-header a {
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header a:hover {
+            transform: scale(1.05);
+        }
+
+        /* -- Hamburger Button -- */
+        .menu-btn {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             cursor: pointer;
-            background: transparent;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .nav-tab:hover {
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.05);
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
         }
 
-        .nav-tab.active {
-            color: #fff;
-            background: rgba(108, 92, 231, 0.15);
-            border-color: rgba(108, 92, 231, 0.4);
+        .menu-btn span {
+            width: 24px;
+            height: 2px;
+            background: var(--white);
+            border-radius: 2px;
+            transition: all 0.3s;
         }
 
-        @media (max-width: 600px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
+        .menu-btn.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
 
-            header h1 {
-                font-size: 1.7rem;
-            }
+        .menu-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-btn.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        /* -- Main Content -- */
+        .hero {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 8rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            letter-spacing: -2px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px rgba(95, 209, 212, 0.3));
+        }
+
+        .hero h1 a {
+            text-decoration: none;
+            color: inherit;
+            transition: opacity 0.3s;
+        }
+
+        .hero h1 a:hover {
+            opacity: 0.8;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--primary);
+            opacity: 0.8;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        /* Overlay to close sidebar */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(28, 51, 66, 0.2);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s;
+            z-index: 999;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
     </style>
 </head>
 
 <body>
 
-    <header>
-        <h1>VisionBox API</h1>
-        <p>Image classification via fine-tuned torchvision models</p>
-        <div class="nav-tabs">
-            <button class="nav-tab active" data-target="inference-section">🧠 Inference</button>
-            <button class="nav-tab" data-target="training-section">⚙️ Fine-Tuning</button>
+    <button class="menu-btn" id="menuBtn">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="overlay" id="overlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/"><img src="/logo.png" alt="VisionBox Logo"></a>
         </div>
-    </header>
-
-    <div class="container">
-
-        <!-- ================= INFERENCE SECTION ================= -->
-        <div id="inference-section" class="section active">
-            <!-- Predict card -->
-            <div class="card">
-                <h2>🔮 Try Prediction</h2>
-
-                <form id="predictForm">
-                    <div class="upload-container">
-                        <div class="drop-zone" id="dropZone">
-                            <div id="dropMessage">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                                </svg>
-                                <p>Drag & drop image here</p>
-                                <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--accent-light);">or click
-                                    to select</p>
-                            </div>
-                            <!-- Image Preview inside the drop zone -->
-                            <div class="preview-container" id="previewContainer">
-                                <img id="previewImage" src="" alt="Preview">
-                                <button type="button" class="remove-photo-btn" id="removePhotoBtn"
-                                    title="Remove photo">✕</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
-
-                    <hr class="divider">
-                    <div class="section-title">Model Inference Input Parameters</div>
-
-                    <div class="form-grid">
-                        <label>
-                            Select model architecture
-                            <select name="model">
-                                <option value="mobilenet_v3_small" selected>MobileNet v3(small)</option>
-                                <option value="mobilenet_v3_large">MobileNet v3(large)</option>
-                                <option value="resnet18">ResNet18</option>
-                                <option value="resnet50">ResNet50</option>
-                                <option value="densenet121">DenseNet-121</option>
-                                <option value="efficientnet_b0">EfficientNet-B0 </option>
-                            </select>
-                        </label>
-                        <label>
-                            Device
-                            <select name="device">
-                                <option value="cpu">cpu</option>
-                                <option value="cuda" selected>cuda</option>
-                            </select>
-                        </label>
-                        <label class="full-width" style="grid-column: 1 / -1; max-width: 48%;">
-                            Number of top predictions
-                            <input type="number" name="topk" value="3" min="1" max="20">
-                        </label>
-                    </div>
-
-                    <hr class="divider">
-                    <div class="section-title">Optional: Custom Fine-Tuned Model</div>
-
-                    <div class="form-grid">
-                        <label>
-                            Weights path
-                            <input type="text" name="weights" placeholder="Leave blank for ImageNet...">
-                        </label>
-                        <label>
-                            Class map path
-                            <input type="text" name="class_map" placeholder="Leave blank for ImageNet...">
-                        </label>
-                    </div>
-
-                    <hr class="divider">
-                    <div class="section-title">Predictions</div>
-
-                    <div class="results" id="predictResultsBox">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Class</th>
-                                    <th>Probability</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsBody">
-                                <!-- Dynamic placeholders will be injected here -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="error-box" id="errorBox"></div>
-
-                    <div class="btn-container">
-                        <button class="btn" type="submit" id="submitBtn">
-                            Classify Image
-                        </button>
-                    </div>
-                </form>
-
-            </div>
+        <nav class="sidebar-nav">
+            <a href="/" class="sidebar-link active">Dashboard</a>
+            <a href="/inference.html" class="sidebar-link">Inference Engine</a>
+            <a href="/fine-tuning.html" class="sidebar-link">Fine-Tuning System</a>
+        </nav>
+        <div style="margin-top: auto;">
+            <a href="https://github.com/Mahyar-t/VLM" target="_blank" class="sidebar-link">GitHub Repo</a>
         </div>
+    </aside>
 
-        <!-- ================= TRAINING SECTION ================= -->
-        <div id="training-section" class="section">
-            <!-- Predict card -->
-            <div class="card">
-                <h2>⚙️ Initiate Fine-Tuning Job</h2>
-
-                <form id="trainForm">
-                    <div class="form-grid full-width">
-                        <label>
-                            Dataset Directory (Absolute Path)
-                            <input type="text" name="data_dir" placeholder="/path/to/dataset" required>
-                        </label>
-                    </div>
-
-                    <div class="form-grid">
-                        <label>
-                            Model Backbone
-                            <select name="model">
-                                <option value="mobilenet_v3_small" selected>mobilenet_v3_small</option>
-                                <option value="mobilenet_v3_large">mobilenet_v3_large</option>
-                                <option value="resnet18">resnet18</option>
-                                <option value="resnet50">resnet50</option>
-                                <option value="densenet121">densenet121</option>
-                                <option value="efficientnet_b0">efficientnet_b0</option>
-                            </select>
-                        </label>
-                        <label>
-                            Device
-                            <select name="device">
-                                <option value="cpu">cpu</option>
-                                <option value="cuda" selected>cuda</option>
-                            </select>
-                        </label>
-                        <label>
-                            Epochs
-                            <input type="number" name="epochs" value="10" min="1" max="100">
-                        </label>
-                        <label>
-                            Batch Size
-                            <input type="number" name="batch_size" value="32" min="1">
-                        </label>
-                        <label>
-                            Learning Rate
-                            <input type="number" step="0.0001" name="lr" value="0.0001">
-                        </label>
-                    </div>
-
-                    <button class="btn" type="submit" id="trainSubmitBtn">
-                        Start Training
-                    </button>
-                </form>
-
-                <div class="error-box" id="trainErrorBox"></div>
-                <div class="results" id="trainResultsBox"></div>
-            </div>
-        </div>
-
-    </div> <!-- .container -->
-
-    <footer>VisionBox API &middot; Spring Boot + Python</footer>
+    <main class="hero">
+        <p>Advanced Computer Vision Toolkit</p>
+        <h1><a href="/">VisionBox</a></h1>
+    </main>
 
     <script>
-        const fileInput = document.getElementById('imageInput');
-        const dropZone = document.getElementById('dropZone');
-        const previewContainer = document.getElementById('previewContainer');
-        const previewImage = document.getElementById('previewImage');
-        const removePhotoBtn = document.getElementById('removePhotoBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
 
-        const form = document.getElementById('predictForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const errorBox = document.getElementById('errorBox');
-        const predictResultsBox = document.getElementById('predictResultsBox');
-        const resultsBody = document.getElementById('resultsBody');
-        const topkInput = document.querySelector('input[name="topk"]');
-
-        // -- Dynamic Placeholders Logic --
-        function updatePlaceholders() {
-            const count = parseInt(topkInput.value) || 3;
-            resultsBody.innerHTML = '';
-            for (let i = 0; i < count; i++) {
-                resultsBody.innerHTML += `<tr class="skeleton-row">
-                    <td>Waiting for image...</td>
-                    <td><span class="skeleton-bar"></span>--%</td>
-                </tr>`;
-            }
-        }
-        topkInput.addEventListener('input', updatePlaceholders);
-        updatePlaceholders(); // init
-
-        // -- Tabs Logic --
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Update tabs
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                // Update sections
-                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-                document.getElementById(tab.dataset.target).classList.add('active');
-            });
-        });
-
-        // -- Predict Logic --
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        removePhotoBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent dropZone click if any
-            fileInput.value = ''; // Clear file
-            previewContainer.classList.remove('active');
-            previewImage.src = '';
-        });
-
-        ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, ev => {
-            ev.preventDefault(); dropZone.classList.add('dragover');
-        }));
-        ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, ev => {
-            ev.preventDefault(); dropZone.classList.remove('dragover');
-        }));
-        dropZone.addEventListener('drop', ev => {
-            if (ev.dataTransfer.files.length) {
-                fileInput.files = ev.dataTransfer.files;
-                showPreview(fileInput.files[0]);
-            }
-        });
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length) showPreview(fileInput.files[0]);
-        });
-
-        function showPreview(file) {
-            if (!file.type.startsWith('image/')) return;
-            const reader = new FileReader();
-            reader.onload = e => {
-                previewImage.src = e.target.result;
-                previewContainer.classList.add('active');
-            };
-            reader.readAsDataURL(file);
+        function toggleSidebar() {
+            const isActive = menuBtn.classList.toggle('active');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
         }
 
-        // ── Submit ────
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-            errorBox.classList.remove('visible');
-
-            const fd = new FormData(form);
-            if (!fileInput.files.length) {
-                showError('Please select an image.');
-                return;
-            }
-
-            // Show loading state in the table
-            const count = parseInt(topkInput.value) || 3;
-            resultsBody.innerHTML = '';
-            for (let i = 0; i < count; i++) {
-                resultsBody.innerHTML += `<tr class="skeleton-row">
-                    <td>Classifying...</td>
-                    <td><span class="skeleton-bar" style="width: 100%; background: var(--accent-light); animation: fadeIn 1s infinite alternate;"></span></td>
-                </tr>`;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner"></span> Classifying…';
-
-            try {
-                const res = await fetch('/api/predict', { method: 'POST', body: fd });
-                const json = await res.json();
-
-                if (json.status === 'ok') {
-                    resultsBody.innerHTML = '';
-                    json.predictions.forEach(p => {
-                        const pct = (p.probability * 100).toFixed(2);
-                        resultsBody.innerHTML += `<tr>
-                        <td>${p.class}</td>
-                        <td><span class="prob-bar" style="width:${pct}px"></span>${pct}%</td>
-                    </tr>`;
-                    });
-                } else {
-                    showError(json.message || 'Unknown error');
-                    updatePlaceholders(); // Revert to empty skeleton
-                }
-            } catch (err) {
-                showError(err.message);
-                updatePlaceholders(); // Revert to empty skeleton
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Classify Image';
-            }
-        });
-
-        function showError(msg) {
-            errorBox.textContent = msg;
-            errorBox.classList.add('visible');
-        }
-
-        // -- Training Logic --
-        const trainForm = document.getElementById('trainForm');
-        const trainSubmitBtn = document.getElementById('trainSubmitBtn');
-        const trainErrorBox = document.getElementById('trainErrorBox');
-        const trainResultsBox = document.getElementById('trainResultsBox');
-
-        trainForm.addEventListener('submit', async e => {
-            e.preventDefault();
-            trainErrorBox.classList.remove('visible');
-            trainResultsBox.classList.remove('visible');
-
-            trainSubmitBtn.disabled = true;
-            trainSubmitBtn.innerHTML = '<span class="spinner"></span> Training...';
-
-            try {
-                const formData = new FormData(trainForm);
-                const payload = Object.fromEntries(formData.entries());
-
-                // Format numbers
-                payload.epochs = parseInt(payload.epochs);
-                payload.batch_size = parseInt(payload.batch_size);
-                payload.lr = parseFloat(payload.lr);
-
-                const res = await fetch('/api/train', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const json = await res.json();
-
-                if (json.status === 'ok') {
-                    trainResultsBox.textContent = "=== Training Complete ===\n\n" + json.output;
-                    trainResultsBox.classList.add('visible');
-                } else {
-                    trainErrorBox.textContent = json.message || 'Unknown error';
-                    trainErrorBox.classList.add('visible');
-                }
-            } catch (err) {
-                trainErrorBox.textContent = err.message;
-                trainErrorBox.classList.add('visible');
-            } finally {
-                trainSubmitBtn.disabled = false;
-                trainSubmitBtn.innerHTML = 'Start Training';
-            }
-        });
+        menuBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
     </script>
 
 </body>
