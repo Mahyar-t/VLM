@@ -3,10 +3,16 @@ from __future__ import annotations
 from typing import Dict, List, Sequence, Tuple, Optional
 from pathlib import Path
 
+import os
 import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
+
+# Suppress library warnings that might interfere with stdout parsing
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+import logging
+logging.getLogger("transformers").setLevel(logging.ERROR)
 
 from .utils import load_checkpoint, get_device
 from .model import create_model
@@ -31,6 +37,7 @@ def predict_image(
     image_path: str,
     weights_path: Optional[str] = None,
     class_to_idx: Optional[Dict[str, int]] = None,
+    candidate_classes: Optional[str] = None,
     model_name: str = "mobilenet_v3_small",
     img_size: Tuple[int, int] = (224, 224),
     mean: Sequence[float] = (0.4368, 0.4336, 0.3294),
@@ -39,6 +46,36 @@ def predict_image(
     topk: int = 5,
 ):
     """Predict classes for a single image. Returns list of (class_name, prob)."""
+    dev = get_device(device)
+
+    if model_name == "clip-vit-base-patch32":
+        from transformers import CLIPProcessor, CLIPModel
+        import contextlib
+        import io
+
+        # Deep silencing during model load to prevent stdout pollution
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(dev)
+            processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        
+        if candidate_classes:
+            classes = [c.strip() for c in candidate_classes.split(",") if c.strip()]
+        else:
+            classes = ["a photo of a cat", "a photo of a dog", "a photo of a car"]
+            
+        text_inputs = [f"a photo of a {c}" if not c.startswith("a photo") else c for c in classes]
+        
+        image = Image.open(image_path).convert("RGB")
+        inputs = processor(text=text_inputs, images=image, return_tensors="pt", padding=True).to(dev)
+        
+        outputs = model(**inputs)
+        logits_per_image = outputs.logits_per_image
+        probs = logits_per_image.softmax(dim=1).squeeze(0)
+        
+        top_probs, top_idx = probs.topk(min(topk, probs.numel()))
+        out = [(classes[int(i)], float(p)) for p, i in zip(top_probs.cpu(), top_idx.cpu())]
+        return out
+
     from torchvision.models import get_model_weights
     
     dev = get_device(device)

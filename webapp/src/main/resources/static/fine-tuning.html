@@ -299,7 +299,9 @@
         }
 
         .btn {
-            background: var(--dark);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             color: var(--white);
             border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 1.2rem 3rem;
@@ -316,6 +318,7 @@
 
         .btn:hover {
             background: var(--primary);
+            border-color: var(--primary);
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(95, 209, 212, 0.3);
             color: var(--dark);

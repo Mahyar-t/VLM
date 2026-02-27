@@ -351,9 +351,11 @@
         }
 
         .btn {
-            background: var(--dark);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             color: var(--white);
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 1.2rem 3rem;
             font-size: 0.9rem;
             font-weight: 600;
@@ -368,8 +370,10 @@
 
         .btn:hover {
             background: var(--primary);
+            border-color: var(--primary);
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(95, 209, 212, 0.3);
+            color: var(--dark);
         }
 
         .results {
@@ -504,6 +508,7 @@
                                 <option value="densenet121">DenseNet-121</option>
                                 <option value="mobilenet_v3_small">MobileNet v3 (Small)</option>
                                 <option value="mobilenet_v3_large">MobileNet v3 (Large)</option>
+                                <option value="clip-vit-base-patch32">CLIP (Zero-Shot)</option>
                             </select>
                         </label>
                         <label>Device
@@ -515,9 +520,26 @@
                         <label>Number of Top Predictions
                             <input type="number" name="topk" id="topkInput" value="3" min="1" max="10">
                         </label>
+                        <hr
+                            style="grid-column: 1 / -1; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 1rem 0;">
+                        <label>Custom Weights (optional)
+                            <input type="text" name="weights" placeholder="/path/to/best.pt">
+                        </label>
+                        <label>Class Map (optional)
+                            <input type="text" name="class_map" placeholder="/path/to/class_to_idx.json">
+                        </label>
+                        <label id="zeroShotLabel" style="display:none; grid-column: 1 / -1;">Zero-Shot Classes
+                            (comma-separated, for CLIP)
+                            <input type="text" name="candidate_classes" placeholder="e.g. cat, dog, bird, car">
+                        </label>
                     </div>
 
+                    <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 2rem 0;">
+
                     <div class="results">
+                        <h3
+                            style="font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--white); margin-bottom: 1.5rem;">
+                            Results</h3>
                         <table>
                             <thead>
                                 <tr>
@@ -551,6 +573,18 @@
             const submitBtn = document.getElementById('submitBtn');
             const resultsBody = document.getElementById('resultsBody');
             const topkInput = document.getElementById('topkInput');
+
+            // Toggle Zero-Shot Classes input visibility
+            const modelSelect = document.querySelector('select[name="model"]');
+            const zeroShotLabel = document.getElementById('zeroShotLabel');
+            modelSelect.addEventListener('change', () => {
+                if (modelSelect.value === 'clip-vit-base-patch32') {
+                    zeroShotLabel.style.display = 'flex';
+                } else {
+                    zeroShotLabel.style.display = 'none';
+                    document.querySelector('input[name="candidate_classes"]').value = '';
+                }
+            });
 
             // -- Placeholder Logic --
             function updatePlaceholders() {

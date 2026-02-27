@@ -11,6 +11,7 @@ def parse_args():
     p.add_argument("--image", required=True, help="Path to an image file.")
     p.add_argument("--weights", default=None, help="Path to model weights (best.pt). Leave blank for ImageNet.")
     p.add_argument("--class-map", default=None, help="Path to class_to_idx.json. Leave blank for ImageNet.")
+    p.add_argument("--classes", default=None, help="Comma-separated list of classes for zero-shot (e.g., 'cat,dog').")
     p.add_argument("--model", default="mobilenet_v3_small")
     p.add_argument("--device", default="cuda")
     p.add_argument("--topk", type=int, default=5)
@@ -26,6 +27,7 @@ def main():
         image_path=args.image,
         weights_path=args.weights,
         class_to_idx=class_to_idx,
+        candidate_classes=args.classes,
         model_name=args.model,
         device=args.device,
         topk=args.topk,

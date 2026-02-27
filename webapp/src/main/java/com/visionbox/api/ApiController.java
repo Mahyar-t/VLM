@@ -4,7 +4,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -21,8 +20,7 @@ public class ApiController {
             "resnet18",
             "resnet50",
             "densenet121",
-            "efficientnet_b0"
-    );
+            "efficientnet_b0");
 
     public ApiController(PythonBridge bridge) {
         this.bridge = bridge;
@@ -49,10 +47,10 @@ public class ApiController {
             @RequestParam("image") MultipartFile image,
             @RequestParam(value = "weights", required = false) String weightsPath,
             @RequestParam(value = "class_map", required = false) String classMapPath,
+            @RequestParam(value = "candidate_classes", required = false) String candidateClasses,
             @RequestParam(value = "model", defaultValue = "mobilenet_v3_small") String model,
             @RequestParam(value = "device", defaultValue = "cuda") String device,
-            @RequestParam(value = "topk", defaultValue = "5") int topk
-    ) {
+            @RequestParam(value = "topk", defaultValue = "5") int topk) {
         try {
             // Save the uploaded image to a temp file
             String originalName = image.getOriginalFilename();
@@ -66,10 +64,10 @@ public class ApiController {
                     tempImage.toAbsolutePath().toString(),
                     weightsPath,
                     classMapPath,
+                    candidateClasses,
                     model,
                     device,
-                    topk
-            );
+                    topk);
 
             // Clean up
             Files.deleteIfExists(tempImage);
@@ -81,8 +79,7 @@ public class ApiController {
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
-                    Map.of("status", "error", "message", e.getMessage())
-            );
+                    Map.of("status", "error", "message", e.getMessage()));
         }
     }
 
@@ -94,17 +91,16 @@ public class ApiController {
             String dataDir = (String) body.get("data_dir");
             if (dataDir == null || dataDir.isBlank()) {
                 return ResponseEntity.badRequest().body(
-                        Map.of("status", "error", "message", "data_dir is required")
-                );
+                        Map.of("status", "error", "message", "data_dir is required"));
             }
 
-            String model      = (String) body.getOrDefault("model", "mobilenet_v3_small");
-            Integer epochs     = body.containsKey("epochs") ? ((Number) body.get("epochs")).intValue() : null;
-            Integer batchSize  = body.containsKey("batch_size") ? ((Number) body.get("batch_size")).intValue() : null;
-            Double  lr         = body.containsKey("lr") ? ((Number) body.get("lr")).doubleValue() : null;
-            String  device     = (String) body.getOrDefault("device", "cpu");
-            String  checkpoint = (String) body.getOrDefault("checkpoint", "best.pt");
-            String  classMap   = (String) body.getOrDefault("save_class_map", "class_to_idx.json");
+            String model = (String) body.getOrDefault("model", "mobilenet_v3_small");
+            Integer epochs = body.containsKey("epochs") ? ((Number) body.get("epochs")).intValue() : null;
+            Integer batchSize = body.containsKey("batch_size") ? ((Number) body.get("batch_size")).intValue() : null;
+            Double lr = body.containsKey("lr") ? ((Number) body.get("lr")).doubleValue() : null;
+            String device = (String) body.getOrDefault("device", "cpu");
+            String checkpoint = (String) body.getOrDefault("checkpoint", "best.pt");
+            String classMap = (String) body.getOrDefault("save_class_map", "class_to_idx.json");
 
             String output = bridge.train(dataDir, model, epochs, batchSize, lr, device, checkpoint, classMap);
 
@@ -115,8 +111,7 @@ public class ApiController {
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
-                    Map.of("status", "error", "message", e.getMessage())
-            );
+                    Map.of("status", "error", "message", e.getMessage()));
         }
     }
 }

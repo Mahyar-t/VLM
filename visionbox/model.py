@@ -14,6 +14,7 @@ _SUPPORTED = {
     "resnet50": "resnet50",
     "densenet121": "densenet121",
     "efficientnet_b0": "efficientnet_b0",
+    "clip-vit-base-patch32": "clip-vit-base-patch32",
 }
 
 

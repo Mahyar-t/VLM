@@ -15,6 +15,7 @@ dependencies = [
   "tqdm",
   "numpy",
   "pillow",
+  "transformers",
 ]
 
 [project.optional-dependencies]
