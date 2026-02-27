@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisionBox API - Inference</title>
+    <title>VisionBox API - VQA</title>
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -309,7 +309,7 @@
 
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 2rem;
             margin-bottom: 2.5rem;
         }
@@ -378,60 +378,21 @@
 
         .results {
             margin-top: 3rem;
-        }
-
-        .results table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .results th {
-            text-align: left;
-            padding: 1rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.4);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .results td {
-            padding: 1.2rem 1rem;
-            font-size: 1rem;
-            font-weight: 500;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--white);
-        }
-
-        .prob-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            padding: 2rem;
+            min-height: 120px;
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            width: 100%;
+            justify-content: center;
         }
 
-        .prob-bar-wrapper {
-            flex-grow: 1;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .prob-bar {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 3px;
-            box-shadow: 0 0 10px rgba(95, 209, 212, 0.4);
-        }
-
-        .prob-value {
-            font-family: 'monospace';
-            font-size: 0.9rem;
-            min-width: 60px;
-            text-align: right;
-            color: var(--primary);
+        .results p {
+            font-size: 1.5rem;
+            color: var(--white);
+            text-align: center;
+            font-weight: 500;
         }
 
         .spinner {
@@ -470,9 +431,9 @@
         <div class="sidebar-header"><a href="/"><img src="/logo.png" alt="Logo"></a></div>
         <nav class="sidebar-nav">
             <a href="/" class="sidebar-link">Dashboard</a>
-            <a href="/inference.html" class="sidebar-link active">Inference Engine</a>
+            <a href="/inference.html" class="sidebar-link">Inference Engine</a>
             <a href="/fine-tuning.html" class="sidebar-link">Fine-Tuning System</a>
-            <a href="/vqa.html" class="sidebar-link">Visual Question Answering</a>
+            <a href="/vqa.html" class="sidebar-link active">Visual Question Answering</a>
         </nav>
         <div style="margin-top:auto;"><a href="https://github.com/Mahyar-t/VLM" target="_blank"
                 class="sidebar-link">GitHub Repo</a></div>
@@ -488,8 +449,8 @@
 
         <div class="container">
             <div class="card">
-                <h2>Inference Engine</h2>
-                <form id="predictForm">
+                <h2>Visual Question Answering</h2>
+                <form id="vqaForm">
                     <div class="drop-zone" id="dropZone">
                         <p>Drag & drop or click to upload</p>
                         <div class="preview-container" id="previewContainer">
@@ -502,15 +463,9 @@
                     <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
 
                     <div class="form-grid">
-                        <label>Architecture
-                            <select name="model">
-                                <option value="resnet18">ResNet18</option>
-                                <option value="resnet50">ResNet50</option>
-                                <option value="densenet121">DenseNet-121</option>
-                                <option value="mobilenet_v3_small">MobileNet v3 (Small)</option>
-                                <option value="mobilenet_v3_large">MobileNet v3 (Large)</option>
-                                <option value="clip-vit-base-patch32">CLIP (Zero-Shot)</option>
-                            </select>
+                        <label>Question
+                            <input type="text" name="question" placeholder="e.g. What color is the car in the image?"
+                                required>
                         </label>
                         <label>Device
                             <select name="device">
@@ -518,41 +473,13 @@
                                 <option value="cuda" selected>CUDA</option>
                             </select>
                         </label>
-                        <label>Number of Top Predictions
-                            <input type="number" name="topk" id="topkInput" value="3" min="1" max="10">
-                        </label>
-                        <hr
-                            style="grid-column: 1 / -1; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 1rem 0;">
-                        <label>Custom Weights (optional)
-                            <input type="text" name="weights" placeholder="/path/to/best.pt">
-                        </label>
-                        <label>Class Map (optional)
-                            <input type="text" name="class_map" placeholder="/path/to/class_to_idx.json">
-                        </label>
-                        <label id="zeroShotLabel" style="display:none; grid-column: 1 / -1;">Zero-Shot Classes
-                            (comma-separated, for CLIP)
-                            <input type="text" name="candidate_classes" placeholder="e.g. cat, dog, bird, car">
-                        </label>
                     </div>
-
-                    <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 2rem 0;">
 
                     <div class="results">
-                        <h3
-                            style="font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--white); margin-bottom: 1.5rem;">
-                            Results</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Class</th>
-                                    <th>Probability</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsBody"></tbody>
-                        </table>
+                        <p id="resultsBody" style="opacity: 0.5;">Waiting for question...</p>
                     </div>
 
-                    <button class="btn" type="submit" id="submitBtn">Classify Image</button>
+                    <button class="btn" type="submit" id="submitBtn">Generate Answer</button>
                 </form>
             </div>
         </div>
@@ -570,47 +497,13 @@
             const previewContainer = document.getElementById('previewContainer');
             const previewImage = document.getElementById('previewImage');
             const removePhotoBtn = document.getElementById('removePhotoBtn');
-            const form = document.getElementById('predictForm');
+            const form = document.getElementById('vqaForm');
             const submitBtn = document.getElementById('submitBtn');
             const resultsBody = document.getElementById('resultsBody');
-            const topkInput = document.getElementById('topkInput');
-
-            // Toggle Zero-Shot Classes input visibility
-            const modelSelect = document.querySelector('select[name="model"]');
-            const zeroShotLabel = document.getElementById('zeroShotLabel');
-            modelSelect.addEventListener('change', () => {
-                if (modelSelect.value === 'clip-vit-base-patch32') {
-                    zeroShotLabel.style.display = 'flex';
-                } else {
-                    zeroShotLabel.style.display = 'none';
-                    document.querySelector('input[name="candidate_classes"]').value = '';
-                }
-            });
-
-            // -- Placeholder Logic --
-            function updatePlaceholders() {
-                const count = parseInt(topkInput.value) || 3;
-                resultsBody.innerHTML = '';
-                for (let i = 0; i < count; i++) {
-                    resultsBody.innerHTML += `<tr style="opacity: 0.2;">
-                    <td>Waiting...</td>
-                    <td>
-                        <div class="prob-container">
-                            <div class="prob-bar-wrapper">
-                                <div style="height:100%; width:0%; background:var(--bg);"></div>
-                            </div>
-                            <span class="prob-value">--%</span>
-                        </div>
-                    </td>
-                </tr>`;
-                }
-            }
-            topkInput.addEventListener('input', updatePlaceholders);
-            updatePlaceholders();
 
             dropZone.onclick = () => fileInput.click();
             fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
-            removePhotoBtn.onclick = (e) => { e.stopPropagation(); fileInput.value = ''; previewContainer.classList.remove('active'); updatePlaceholders(); };
+            removePhotoBtn.onclick = (e) => { e.stopPropagation(); fileInput.value = ''; previewContainer.classList.remove('active'); resultsBody.innerHTML = "Waiting for question..."; resultsBody.style.opacity = 0.5; };
 
             function showPreview(file) {
                 const reader = new FileReader();
@@ -621,44 +514,33 @@
             form.onsubmit = async (e) => {
                 e.preventDefault();
                 if (!fileInput.files.length) return alert('Select image');
+                const questionInput = document.querySelector('input[name="question"]').value;
+                if (!questionInput.trim()) return alert('Please enter a question');
 
-                // Show loading skeletons
-                const count = parseInt(topkInput.value) || 3;
-                resultsBody.innerHTML = '';
-                for (let i = 0; i < count; i++) {
-                    resultsBody.innerHTML += `<tr>
-                    <td>Classifying...</td>
-                    <td><div style="height:4px; width:100%; background:var(--primary); border-radius:2px; animation: pulse 1s infinite alternate;"></div></td>
-                </tr>`;
-                }
+                resultsBody.innerHTML = 'Thinking...';
+                resultsBody.style.opacity = 1;
 
                 submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
                 submitBtn.disabled = true;
                 try {
-                    const res = await fetch('/api/predict', { method: 'POST', body: new FormData(form) });
+                    const res = await fetch('/api/vqa', { method: 'POST', body: new FormData(form) });
                     const json = await res.json();
                     if (json.status === 'ok') {
-                        resultsBody.innerHTML = json.predictions.map(p => `
-                        <tr>
-                            <td>${p.class}</td>
-                            <td>
-                                <div class="prob-container">
-                                    <div class="prob-bar-wrapper">
-                                        <div class="prob-bar" style="width:${p.probability * 100}%"></div>
-                                    </div>
-                                    <span class="prob-value">${(p.probability * 100).toFixed(2)}%</span>
-                                </div>
-                            </td>
-                        </tr>`).join('');
+                        resultsBody.innerHTML = json.answer;
+                        resultsBody.style.color = "var(--primary)";
+                        resultsBody.style.fontWeight = "bold";
+                        resultsBody.style.fontSize = "2rem";
                     } else {
                         alert(json.message);
-                        updatePlaceholders();
+                        resultsBody.innerHTML = "Error occurred.";
+                        resultsBody.style.opacity = 0.5;
                     }
                 } catch (err) {
                     alert(err.message);
-                    updatePlaceholders();
+                    resultsBody.innerHTML = "Error occurred.";
+                    resultsBody.style.opacity = 0.5;
                 }
-                finally { submitBtn.innerHTML = 'Classify Image'; submitBtn.disabled = false; }
+                finally { submitBtn.innerHTML = 'Generate Answer'; submitBtn.disabled = false; }
             };
         </script>
 </body>

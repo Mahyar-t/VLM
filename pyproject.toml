@@ -24,6 +24,7 @@ dev = ["black", "ruff"]
 [project.scripts]
 visionbox-train = "visionbox.cli.train:main"
 visionbox-predict = "visionbox.cli.predict:main"
+visionbox-vqa = "visionbox.cli.vqa:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

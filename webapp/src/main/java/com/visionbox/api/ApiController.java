@@ -83,6 +83,41 @@ public class ApiController {
         }
     }
 
+    // ── VQA ──────────────────────────────────────────────────────────────────
+
+    @PostMapping("/api/vqa")
+    public ResponseEntity<?> vqa(
+            @RequestParam("image") MultipartFile image,
+            @RequestParam("question") String question,
+            @RequestParam(value = "device", defaultValue = "cuda") String device) {
+        try {
+            // Save the uploaded image to a temp file
+            String originalName = image.getOriginalFilename();
+            String suffix = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf('.'))
+                    : ".jpg";
+            Path tempImage = Files.createTempFile("vqa_upload_", suffix);
+            image.transferTo(tempImage.toFile());
+
+            String answer = bridge.vqa(
+                    tempImage.toAbsolutePath().toString(),
+                    question,
+                    device);
+
+            // Clean up
+            Files.deleteIfExists(tempImage);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("answer", answer);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
     // ── Train ────────────────────────────────────────────────────────────────
 
     @PostMapping("/api/train")

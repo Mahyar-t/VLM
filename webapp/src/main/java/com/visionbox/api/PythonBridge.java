@@ -114,6 +114,28 @@ public class PythonBridge {
         return runProcess(cmd);
     }
 
+    // ── vqa ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Runs: visionbox-vqa --image <path> --question <question> [--device <device>]
+     *
+     * @return the raw stdout output of the vqa process, which is the answer
+     */
+    public String vqa(String imagePath, String question, String device) throws Exception {
+        String script = resolveScriptPath("visionbox-vqa");
+        List<String> cmd = new ArrayList<>(List.of(
+                script,
+                "--image", imagePath,
+                "--question", question));
+        if (device != null && !device.isBlank()) {
+            cmd.addAll(List.of("--device", device));
+        }
+
+        String output = runProcess(cmd).strip();
+        String[] lines = output.split("\n");
+        return lines[lines.length - 1].strip();
+    }
+
     // ── internal ─────────────────────────────────────────────────────────────
 
     private String resolveScriptPath(String scriptName) {
