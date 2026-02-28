@@ -482,7 +482,7 @@
                             <input type="text" name="condition" placeholder="e.g. A photograph of">
                         </label>
                         <label>Device
-                            <select name="device">
+                            <select id="deviceSelect" name="device">
                                 <option value="cpu">CPU</option>
                                 <option value="cuda" selected>CUDA</option>
                             </select>
@@ -566,18 +566,21 @@
 
             const modelSelect = document.getElementById('modelSelect');
 
-            // Handle Pre-loading
-            modelSelect.addEventListener('change', async () => {
+            const deviceSelect = document.getElementById('deviceSelect');
+
+            async function triggerPreload() {
                 const selectedModel = modelSelect.value;
                 if (!selectedModel) return;
 
+                const selectedDevice = deviceSelect.value;
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner"></span> Loading Model to GPU...';
+                submitBtn.innerHTML = `<span class="spinner"></span> Loading Model to ${selectedDevice.toUpperCase()}...`;
 
                 try {
                     const formData = new FormData();
                     formData.append('model', selectedModel);
-                    // fetch implicitly to the background
+                    formData.append('device', selectedDevice);
+
                     const res = await fetch('/api/preload', { method: 'POST', body: formData });
                     if (res.ok) {
                         submitBtn.innerHTML = 'Generate Caption';
@@ -589,7 +592,10 @@
                     submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
                     submitBtn.disabled = false;
                 }
-            });
+            }
+
+            modelSelect.addEventListener('change', triggerPreload);
+            deviceSelect.addEventListener('change', triggerPreload);
 
             form.onsubmit = async (e) => {
                 e.preventDefault();

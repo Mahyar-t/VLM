@@ -26,7 +26,7 @@ models = {}
 app = FastAPI(title="VisionBox API Server")
 
 def load_caption_model(model_name: str, device: str):
-    key = f"caption_{model_name}"
+    key = f"caption_{model_name}_{device}"
     if key not in models:
         print(f"Loading {model_name} into VRAM...")
         dev = get_device(device)
@@ -37,7 +37,7 @@ def load_caption_model(model_name: str, device: str):
     return models[key]
 
 def load_vqa_model(device: str):
-    key = "vqa_base"
+    key = f"vqa_base_{device}"
     if key not in models:
         print("Loading VQA model into VRAM...")
         dev = get_device(device)
@@ -48,7 +48,7 @@ def load_vqa_model(device: str):
     return models[key]
 
 def load_clip_model(device: str):
-    key = "clip_patch32"
+    key = f"clip_patch32_{device}"
     if key not in models:
         print("Loading CLIP model into VRAM...")
         dev = get_device(device)
