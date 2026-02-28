@@ -470,183 +470,250 @@
                                 <option value="Salesforce/blip-image-captioning-large">BLIP Large (High Quality)
                                 </option>
                                 <option value="Salesforce/blip-image-captioning-base">BLIP Base (Faster)</option>
+                                <option value="__local__">📁 Custom Local Path...</option>
                             </select>
                         </label>
-                        <label>Captioning Mode
-                            <select id="captionModeSelect" name="captionMode">
-                                <option value="unconditional" selected>Unconditional Captioning</option>
-                                <option value="conditional">Conditional Captioning</option>
-                            </select>
+                        <label id="localPathLabel" style="display:none;">Local Model Path
+                            <input type="text" id="localPathInput"
+                                placeholder="e.g. /home/user/models/blip2 or custom HuggingFace ID" autocomplete="off">
                         </label>
-                        <label id="conditionLabel" style="display:none;">Starting Text Condition
-                            <input type="text" name="condition" placeholder="e.g. A photograph of">
-                        </label>
-                        <label>Device
-                            <select id="deviceSelect" name="device">
-                                <option value="cpu">CPU</option>
-                                <option value="cuda" selected>CUDA</option>
-                            </select>
-                        </label>
-                    </div>
-
-                    <button class="btn" type="submit" id="submitBtn" disabled>Generate Caption</button>
-
-                    <div class="results" id="resultsContainer" style="display:none; flex-direction: column; gap: 1rem;">
-                        <div id="timerContainer"
-                            style="font-size: 0.8rem; color: var(--primary); letter-spacing: 1px; font-weight: 700; text-transform: uppercase;">
-                            Thinking Time: <span id="timerValue">0.0s</span>
-                        </div>
-                        <p id="resultsBody">Generating...</p>
-                    </div>
-                </form>
+                    <label>Captioning Mode
+                        <select id="captionModeSelect" name="captionMode">
+                            <option value="unconditional" selected>Unconditional Captioning</option>
+                            <option value="conditional">Conditional Captioning</option>
+                        </select>
+                    </label>
+                    <label id="conditionLabel" style="display:none;">Starting Text Condition
+                        <input type="text" name="condition" placeholder="e.g. A photograph of">
+                    </label>
+                    <label>Device
+                        <select id="deviceSelect" name="device">
+                            <option value="cpu">CPU</option>
+                            <option value="cuda" selected>CUDA</option>
+                        </select>
+                    </label>
             </div>
+
+            <button class="btn" type="submit" id="submitBtn" disabled>Generate Caption</button>
+
+            <!-- Progress bar shown during model loading -->
+            <div id="loadProgressContainer" style="display:none; width:100%; margin-top: 0.5rem;">
+                <div
+                    style="display:flex; justify-content:space-between; font-size:0.75rem; color: var(--primary); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">
+                    <span id="loadStageLabel">Loading...</span>
+                    <span id="loadPercent">0%</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.08); border-radius:99px; height:6px; overflow:hidden;">
+                    <div id="loadProgressBar"
+                        style="height:100%; width:0%; background: linear-gradient(90deg, var(--primary), #00f0ff); border-radius:99px; transition: width 0.4s ease;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="results" id="resultsContainer" style="display:none; flex-direction: column; gap: 1rem;">
+                <div id="timerContainer"
+                    style="font-size: 0.8rem; color: var(--primary); letter-spacing: 1px; font-weight: 700; text-transform: uppercase;">
+                    Thinking Time: <span id="timerValue">0.0s</span>
+                </div>
+                <p id="resultsBody">Generating...</p>
+            </div>
+            </form>
         </div>
+    </div>
 
-        <script>
-            const menuBtn = document.getElementById('menuBtn');
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            function toggleSidebar() { menuBtn.classList.toggle('active'); sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
-            menuBtn.addEventListener('click', toggleSidebar);
-            overlay.addEventListener('click', toggleSidebar);
+    <script>
+        const menuBtn = document.getElementById('menuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        function toggleSidebar() { menuBtn.classList.toggle('active'); sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
+        menuBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
 
-            const fileInput = document.getElementById('imageInput');
-            const dropZone = document.getElementById('dropZone');
-            const previewContainer = document.getElementById('previewContainer');
-            const previewImage = document.getElementById('previewImage');
-            const removePhotoBtn = document.getElementById('removePhotoBtn');
-            const form = document.getElementById('captionForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const resultsContainer = document.getElementById('resultsContainer');
-            const resultsBody = document.getElementById('resultsBody');
-            const timerContainer = document.getElementById('timerContainer');
-            const timerValue = document.getElementById('timerValue');
+        const fileInput = document.getElementById('imageInput');
+        const dropZone = document.getElementById('dropZone');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const removePhotoBtn = document.getElementById('removePhotoBtn');
+        const form = document.getElementById('captionForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsBody = document.getElementById('resultsBody');
+        const timerContainer = document.getElementById('timerContainer');
+        const timerValue = document.getElementById('timerValue');
 
-            const captionModeSelect = document.getElementById('captionModeSelect');
-            const conditionLabel = document.getElementById('conditionLabel');
-            const conditionInput = document.querySelector('input[name="condition"]');
+        const captionModeSelect = document.getElementById('captionModeSelect');
+        const conditionLabel = document.getElementById('conditionLabel');
+        const conditionInput = document.querySelector('input[name="condition"]');
 
-            captionModeSelect.addEventListener('change', () => {
-                if (captionModeSelect.value === 'conditional') {
-                    conditionLabel.style.display = 'flex';
-                } else {
-                    conditionLabel.style.display = 'none';
-                    conditionInput.value = '';
-                }
-            });
-
-            dropZone.onclick = () => fileInput.click();
-            fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
-            removePhotoBtn.onclick = (e) => {
-                e.stopPropagation();
-                fileInput.value = '';
-                previewContainer.classList.remove('active');
-                resultsContainer.style.display = 'none';
-            };
-
-            function showPreview(file) {
-                const reader = new FileReader();
-                reader.onload = e => { previewImage.src = e.target.result; previewContainer.classList.add('active'); };
-                reader.readAsDataURL(file);
+        captionModeSelect.addEventListener('change', () => {
+            if (captionModeSelect.value === 'conditional') {
+                conditionLabel.style.display = 'flex';
+            } else {
+                conditionLabel.style.display = 'none';
+                conditionInput.value = '';
             }
+        });
 
-            let timerInterval;
-            function startTimer() {
-                let start = Date.now();
-                timerValue.innerText = '0.0s';
-                timerInterval = setInterval(() => {
-                    let elapsed = (Date.now() - start) / 1000;
-                    timerValue.innerText = elapsed.toFixed(1) + 's';
-                }, 100);
-            }
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
+        removePhotoBtn.onclick = (e) => {
+            e.stopPropagation();
+            fileInput.value = '';
+            previewContainer.classList.remove('active');
+            resultsContainer.style.display = 'none';
+        };
 
-            function stopTimer() {
-                clearInterval(timerInterval);
-            }
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = e => { previewImage.src = e.target.result; previewContainer.classList.add('active'); };
+            reader.readAsDataURL(file);
+        }
 
-            const modelSelect = document.getElementById('modelSelect');
+        let timerInterval;
+        function startTimer() {
+            let start = Date.now();
+            timerValue.innerText = '0.0s';
+            timerInterval = setInterval(() => {
+                let elapsed = (Date.now() - start) / 1000;
+                timerValue.innerText = elapsed.toFixed(1) + 's';
+            }, 100);
+        }
 
-            const deviceSelect = document.getElementById('deviceSelect');
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
 
-            async function triggerPreload() {
-                const selectedModel = modelSelect.value;
-                if (!selectedModel) return;
+        const modelSelect = document.getElementById('modelSelect');
 
-                const selectedDevice = deviceSelect.value;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<span class="spinner"></span> Loading Model to ${selectedDevice.toUpperCase()}...`;
+        const deviceSelect = document.getElementById('deviceSelect');
 
+        async function triggerPreload() {
+            const localPathInput = document.getElementById('localPathInput');
+            const selectedModel = modelSelect.value === '__local__'
+                ? localPathInput.value.trim()
+                : modelSelect.value;
+            if (!selectedModel || selectedModel === '__local__') return;
+
+            const selectedDevice = deviceSelect.value;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="spinner"></span> Loading...`;
+
+            // Show the progress bar
+            const progressContainer = document.getElementById('loadProgressContainer');
+            const progressBar = document.getElementById('loadProgressBar');
+            const stageLabel = document.getElementById('loadStageLabel');
+            const percentLabel = document.getElementById('loadPercent');
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '5%';
+            stageLabel.textContent = 'Queued...';
+            percentLabel.textContent = '5%';
+
+            // Start polling for real stage updates
+            let pollInterval = setInterval(async () => {
                 try {
-                    const formData = new FormData();
-                    formData.append('model', selectedModel);
-                    formData.append('device', selectedDevice);
-                    formData.append('task', 'caption');
-
-                    const res = await fetch('/api/preload', { method: 'POST', body: formData });
-                    if (res.ok) {
-                        submitBtn.innerHTML = 'Generate Caption';
-                        submitBtn.disabled = false;
-                    } else {
-                        throw new Error("Failed to load model.");
+                    const statusRes = await fetch(`/api/preload-status?model_name=${encodeURIComponent(selectedModel)}&device=${encodeURIComponent(selectedDevice)}`);
+                    if (!statusRes.ok) return;
+                    const status = await statusRes.json();
+                    progressBar.style.width = status.percent + '%';
+                    stageLabel.textContent = status.label;
+                    percentLabel.textContent = status.percent + '%';
+                    if (status.stage === 'done' || status.stage === 'error') {
+                        clearInterval(pollInterval);
                     }
-                } catch (e) {
-                    submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
+                } catch (_) { /* ignore transient errors */ }
+            }, 500);
+
+            try {
+                const formData = new FormData();
+                formData.append('model', selectedModel);
+                formData.append('device', selectedDevice);
+                formData.append('task', 'caption');
+
+                const res = await fetch('/api/preload', { method: 'POST', body: formData });
+                clearInterval(pollInterval);
+                if (res.ok) {
+                    progressBar.style.width = '100%';
+                    stageLabel.textContent = 'Ready!';
+                    percentLabel.textContent = '100%';
+                    setTimeout(() => { progressContainer.style.display = 'none'; }, 1000);
+                    submitBtn.innerHTML = 'Generate Caption';
                     submitBtn.disabled = false;
+                } else {
+                    throw new Error("Failed to load model.");
                 }
+            } catch (e) {
+                clearInterval(pollInterval);
+                progressContainer.style.display = 'none';
+                submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
+                submitBtn.disabled = false;
+            }
+        }
+
+        modelSelect.addEventListener('change', () => {
+            const localPathLabel = document.getElementById('localPathLabel');
+            const localPathInput = document.getElementById('localPathInput');
+            const isLocal = modelSelect.value === '__local__';
+            localPathLabel.style.display = isLocal ? 'flex' : 'none';
+            if (!isLocal) triggerPreload();
+            if (isLocal) {
+                localPathInput.onblur = () => { if (localPathInput.value.trim()) triggerPreload(); };
+            }
+        });
+        deviceSelect.addEventListener('change', triggerPreload);
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const localPathInput = document.getElementById('localPathInput');
+            const resolvedModel = modelSelect.value === '__local__'
+                ? localPathInput.value.trim()
+                : modelSelect.value;
+            if (!resolvedModel || resolvedModel === '__local__') return alert('Select a Captioning Model first');
+            if (!fileInput.files.length) return alert('Select image');
+
+            if (captionModeSelect.value === 'conditional' && !conditionInput.value.trim()) {
+                return alert('Please enter a starting text condition for Conditional Captioning');
             }
 
-            modelSelect.addEventListener('change', triggerPreload);
-            deviceSelect.addEventListener('change', triggerPreload);
+            resultsContainer.style.display = 'flex';
+            resultsBody.innerHTML = 'Generating...';
+            resultsBody.style.opacity = 1;
+            resultsBody.style.color = "var(--white)";
+            resultsBody.style.fontSize = "1.5rem";
 
-            form.onsubmit = async (e) => {
-                e.preventDefault();
-                if (!modelSelect.value) return alert('Select a Captioning Model first');
-                if (!fileInput.files.length) return alert('Select image');
+            submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+            submitBtn.disabled = true;
 
-                if (captionModeSelect.value === 'conditional' && !conditionInput.value.trim()) {
-                    return alert('Please enter a starting text condition for Conditional Captioning');
-                }
+            startTimer();
 
-                resultsContainer.style.display = 'flex';
-                resultsBody.innerHTML = 'Generating...';
-                resultsBody.style.opacity = 1;
-                resultsBody.style.color = "var(--white)";
-                resultsBody.style.fontSize = "1.5rem";
+            let formData = new FormData(form);
+            if (captionModeSelect.value === 'unconditional') {
+                formData.delete('condition');
+            }
+            formData.delete('captionMode');
 
-                submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
-                submitBtn.disabled = true;
-
-                startTimer();
-
-                let formData = new FormData(form);
-                if (captionModeSelect.value === 'unconditional') {
-                    formData.delete('condition');
-                }
-                formData.delete('captionMode');
-
-                try {
-                    const res = await fetch('/api/caption', { method: 'POST', body: formData });
-                    const json = await res.json();
-                    stopTimer();
-                    if (json.status === 'ok') {
-                        resultsBody.innerHTML = json.caption;
-                        resultsBody.style.color = "var(--primary)";
-                        resultsBody.style.fontWeight = "bold";
-                        resultsBody.style.fontSize = "2rem";
-                    } else {
-                        alert(json.message);
-                        resultsBody.innerHTML = "Error occurred.";
-                        resultsBody.style.opacity = 0.5;
-                    }
-                } catch (err) {
-                    stopTimer();
-                    alert(err.message);
+            try {
+                const res = await fetch('/api/caption', { method: 'POST', body: formData });
+                const json = await res.json();
+                stopTimer();
+                if (json.status === 'ok') {
+                    resultsBody.innerHTML = json.caption;
+                    resultsBody.style.color = "var(--primary)";
+                    resultsBody.style.fontWeight = "bold";
+                    resultsBody.style.fontSize = "2rem";
+                } else {
+                    alert(json.message);
                     resultsBody.innerHTML = "Error occurred.";
                     resultsBody.style.opacity = 0.5;
                 }
-                finally { submitBtn.innerHTML = 'Generate Caption'; submitBtn.disabled = false; }
-            };
-        </script>
+            } catch (err) {
+                stopTimer();
+                alert(err.message);
+                resultsBody.innerHTML = "Error occurred.";
+                resultsBody.style.opacity = 0.5;
+            }
+            finally { submitBtn.innerHTML = 'Generate Caption'; submitBtn.disabled = false; }
+        };
+    </script>
 </body>
 
 </html>

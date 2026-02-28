@@ -16,6 +16,7 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 from transformers import (
     BlipProcessor, BlipForConditionalGeneration,
     BlipForQuestionAnswering,
+    Blip2Processor, Blip2ForConditionalGeneration,
     CLIPProcessor, CLIPModel
 )
 
@@ -24,29 +25,64 @@ from visionbox.utils import get_device
 # Global dictionary to hold lazy-loaded models in VRAM
 models = {}
 
+# Tracks real-time loading state per (model_name, device) key
+loading_states: dict = {}
+
+STAGE_PERCENTAGES = {
+    "queued":            5,
+    "loading_processor": 20,
+    "loading_model":     65,
+    "moving_to_device":  88,
+    "done":             100,
+    "error":            100,
+}
+
 app = FastAPI(title="VisionBox API Server")
+
+def _is_blip2(model_name: str) -> bool:
+    return "blip2" in model_name.lower()
 
 def load_caption_model(model_name: str, device: str):
     key = f"caption_{model_name}_{device}"
+    state_key = f"{model_name}::{device}"
     if key not in models:
         print(f"Loading {model_name} into VRAM...")
         dev = get_device(device)
+        loading_states[state_key] = "loading_processor"
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            processor = BlipProcessor.from_pretrained(model_name)
-            model = BlipForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.float16).to(dev)
+            if _is_blip2(model_name):
+                processor = Blip2Processor.from_pretrained(model_name)
+                loading_states[state_key] = "loading_model"
+                model = Blip2ForConditionalGeneration.from_pretrained(
+                    model_name, torch_dtype=torch.float32
+                )
+            else:
+                processor = BlipProcessor.from_pretrained(model_name)
+                loading_states[state_key] = "loading_model"
+                model = BlipForConditionalGeneration.from_pretrained(
+                    model_name, torch_dtype=torch.float16
+                )
+            loading_states[state_key] = "moving_to_device"
+            model = model.to(dev)
             models[key] = (processor, model)
+        loading_states[state_key] = "done"
     return models[key]
 
 def load_vqa_model(model_name: str, device: str):
     key = f"vqa_{model_name}_{device}"
+    state_key = f"{model_name}::{device}"
     if key not in models:
         print(f"Loading VQA model {model_name} into VRAM...")
         dev = get_device(device)
+        loading_states[state_key] = "loading_processor"
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            # The base class is capable of loading both the base and capfilt-large models
             processor = BlipProcessor.from_pretrained(model_name)
-            model = BlipForQuestionAnswering.from_pretrained(model_name, torch_dtype=torch.float16).to(dev)
+            loading_states[state_key] = "loading_model"
+            model = BlipForQuestionAnswering.from_pretrained(model_name, torch_dtype=torch.float16)
+            loading_states[state_key] = "moving_to_device"
+            model = model.to(dev)
             models[key] = (processor, model)
+        loading_states[state_key] = "done"
     return models[key]
 
 def load_clip_model(device: str):
@@ -87,15 +123,38 @@ class PreloadRequest(BaseModel):
 
 @app.post("/api/preload")
 async def preload_model(req: PreloadRequest):
+    state_key = f"{req.model_name}::{req.device}"
+    loading_states[state_key] = "queued"
     try:
-        # Run the blocking model load in a thread to avoid freezing the event loop
         if req.task == "vqa":
             await asyncio.to_thread(load_vqa_model, req.model_name, req.device)
         else:
             await asyncio.to_thread(load_caption_model, req.model_name, req.device)
         return {"status": "ok", "message": f"Successfully loaded {req.model_name} to {req.device}"}
     except Exception as e:
+        loading_states[state_key] = "error"
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/preload-status")
+async def preload_status(model_name: str, device: str):
+    state_key = f"{model_name}::{device}"
+    # If already in models cache, it's done regardless of state
+    caption_cached = f"caption_{model_name}_{device}" in models
+    vqa_cached = f"vqa_{model_name}_{device}" in models
+    if caption_cached or vqa_cached:
+        return {"stage": "done", "percent": 100, "label": "Ready!"}
+    stage = loading_states.get(state_key, "idle")
+    percent = STAGE_PERCENTAGES.get(stage, 0)
+    labels = {
+        "idle":             "Waiting...",
+        "queued":           "Queued...",
+        "loading_processor":"Loading processor...",
+        "loading_model":    "Loading model weights...",
+        "moving_to_device": "Transferring to GPU...",
+        "done":             "Ready!",
+        "error":            "Error!",
+    }
+    return {"stage": stage, "percent": percent, "label": labels.get(stage, stage)}
 
 @app.post("/api/caption")
 async def generate_caption(req: CaptionRequest):
@@ -103,22 +162,35 @@ async def generate_caption(req: CaptionRequest):
         contents = base64.b64decode(req.image_base64)
         img = Image.open(io.BytesIO(contents)).convert("RGB")
         dev = get_device(req.device)
-        
-        processor, model = load_caption_model(req.model_name, req.device)
-        
-        if req.condition:
-            inputs = processor(img, req.condition, return_tensors="pt").to(dev, torch.float16)
-            out = model.generate(**inputs, max_new_tokens=50)
+
+        processor, model = await asyncio.to_thread(load_caption_model, req.model_name, req.device)
+
+        if _is_blip2(req.model_name):
+            # BLIP-2 inference: pass optional text prompt, decode dropping the prompt prefix
+            if req.condition:
+                inputs = processor(images=img, text=req.condition, return_tensors="pt").to(dev)
+            else:
+                inputs = processor(images=img, return_tensors="pt").to(dev)
+            out = model.generate(**inputs, max_new_tokens=100)
+            # Decode full output then strip the prompt if it was echoed
+            caption = processor.decode(out[0], skip_special_tokens=True).strip()
+            if req.condition and caption.lower().startswith(req.condition.lower()):
+                caption = caption[len(req.condition):].strip()
         else:
-            inputs = processor(img, return_tensors="pt").to(dev, torch.float16)
-            out = model.generate(**inputs, max_new_tokens=50)
-            
-        caption = processor.decode(out[0], skip_special_tokens=True)
-        if req.condition and caption.lower().startswith(req.condition.lower()):
-            caption = caption[len(req.condition):].strip()
-        if not caption and req.condition:
-            caption = req.condition
-            
+            # BLIP-1 inference — use beam search to avoid greedy-decoding artifact
+            if req.condition:
+                inputs = processor(img, req.condition, return_tensors="pt").to(dev, torch.float16)
+                out = model.generate(**inputs, max_new_tokens=50, num_beams=5, early_stopping=True)
+            else:
+                inputs = processor(img, return_tensors="pt").to(dev, torch.float16)
+                out = model.generate(**inputs, max_new_tokens=50, num_beams=5, early_stopping=True)
+            caption = processor.decode(out[0], skip_special_tokens=True).strip()
+            caption = caption[:1].upper() + caption[1:] if caption else caption
+            if req.condition and caption.lower().startswith(req.condition.lower()):
+                caption = caption[len(req.condition):].strip()
+            if not caption and req.condition:
+                caption = req.condition
+
         return {"caption": caption}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

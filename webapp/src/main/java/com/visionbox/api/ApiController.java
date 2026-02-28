@@ -176,6 +176,18 @@ public class ApiController {
         }
     }
 
+    @GetMapping("/api/preload-status")
+    public ResponseEntity<Map<String, Object>> preloadStatus(
+            @RequestParam("model_name") String modelName,
+            @RequestParam(value = "device", defaultValue = "cuda") String device) {
+        try {
+            Map<String, Object> status = bridge.getPreloadStatus(modelName, device);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("stage", "error", "percent", 0, "label", e.getMessage()));
+        }
+    }
+
     // ── Train ────────────────────────────────────────────────────────────────
 
     @PostMapping("/api/train")

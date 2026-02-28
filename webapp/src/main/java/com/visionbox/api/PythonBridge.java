@@ -282,6 +282,18 @@ public class PythonBridge {
         }
     }
 
+    public Map<String, Object> getPreloadStatus(String modelName, String device) throws Exception {
+        String url = serverUrl + "/preload-status?model_name=" + java.net.URLEncoder.encode(modelName, "UTF-8")
+                + "&device=" + java.net.URLEncoder.encode(device, "UTF-8");
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), Map.class);
+    }
+
     // ── internal ─────────────────────────────────────────────────────────────
 
     private String resolveScriptPath(String scriptName) {
