@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionBox API - Fine-Tuning</title>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scrollbar-gutter: stable;
+        }
+
+        :root {
+            --bg: #DAE4E8;
+            --primary: #5FD1D4;
+            --secondary: #82D2D5;
+            --dark: #1C3342;
+            --white: #FFFFFF;
+            --sidebar-width: 280px;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: var(--dark);
+            background-image:
+                linear-gradient(rgba(28, 51, 66, 0.6), rgba(28, 51, 66, 0.6)),
+                url('hero-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: 400;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .main-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: calc(-1 * var(--sidebar-width));
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: rgba(28, 51, 66, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: var(--white);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            padding: 2rem 2rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar.active {
+            transform: translateX(var(--sidebar-width));
+        }
+
+        .sidebar-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4rem;
+            margin-bottom: 3rem;
+            gap: 1rem;
+        }
+
+        .sidebar-header img {
+            height: 100px;
+            filter: drop-shadow(0 0 15px rgba(95, 209, 212, 0.4));
+        }
+
+        .sidebar-header a {
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header a:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar-link {
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-link:hover {
+            color: var(--white);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .sidebar-link.active {
+            color: var(--primary);
+            background: rgba(95, 209, 212, 0.15);
+            border-left: 3px solid var(--primary);
+        }
+
+        /* -- Hamburger Button -- */
+        .menu-btn {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-btn span {
+            width: 24px;
+            height: 2px;
+            background: var(--white);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .menu-btn.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .menu-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-btn.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        header {
+            width: 100%;
+            padding: 3rem 4rem 2rem 110px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            color: var(--white);
+            text-shadow: 0 0 15px rgba(95, 209, 212, 0.3);
+        }
+
+        header h1 a {
+            text-decoration: none;
+            color: inherit;
+            transition: opacity 0.3s;
+        }
+
+        header h1 a:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            padding: 0 4rem 4rem;
+            z-index: 10;
+        }
+
+        .card {
+            background: rgba(28, 51, 66, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: var(--radius);
+            padding: 3rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        h2 {
+            font-weight: 700;
+            font-size: 1.6rem;
+            margin-bottom: 2.5rem;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .form-grid.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-grid label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .form-grid input,
+        .form-grid select {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            color: var(--white);
+            font-family: inherit;
+            font-size: 1.1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-grid select option {
+            background-color: var(--dark);
+            color: var(--white);
+        }
+
+        .form-grid input:focus,
+        .form-grid select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.2rem 3rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(95, 209, 212, 0.3);
+            color: var(--dark);
+        }
+
+        .results {
+            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: 'monospace';
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--white);
+        }
+
+        .results.visible {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="menu-btn" id="menuBtn"><span></span><span></span><span></span></button>
+    <div class="overlay" id="overlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><a href="/"><img src="/logo.png" alt="Logo"></a></div>
+        <nav class="sidebar-nav">
+            <a href="/" class="sidebar-link">Dashboard</a>
+            <a href="/inference.html" class="sidebar-link">Inference Engine</a>
+            <a href="/fine-tuning.html" class="sidebar-link active">Fine-Tuning System</a>
+            <a href="/vqa.html" class="sidebar-link">Visual Question Answering</a>
+            <a href="/caption.html" class="sidebar-link">Image Captioning</a>
+        </nav>
+        <div style="margin-top:auto;"><a href="https://github.com/Mahyar-t/VLM" target="_blank"
+                class="sidebar-link">GitHub Repo</a></div>
+    </aside>
+
+    <div class="main-wrapper">
+
+        <header>
+            <div class="header-brand">
+                <h1><a href="/">VisionBox</a></h1>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="card">
+                <h2>Fine-Tuning System</h2>
+                <form id="trainForm">
+                    <div class="form-grid full"><label>Dataset Directory (Absolute Path)<input type="text"
+                                name="data_dir" placeholder="/home/user/dataset" required></label></div>
+                    <div class="form-grid">
+                        <label>Backbone Architecture
+                            <select name="model">
+                                <option value="mobilenet_v3_small">MobileNet v3 (Small)</option>
+                                <option value="mobilenet_v3_large">MobileNet v3 (Large)</option>
+                                <option value="resnet18">ResNet18</option>
+                                <option value="resnet50">ResNet50</option>
+                            </select>
+                        </label>
+                        <label>Device<select name="device">
+                                <option value="cpu">CPU</option>
+                                <option value="cuda" selected>CUDA</option>
+                            </select></label>
+                        <label>Epochs<input type="number" name="epochs" value="10"></label>
+                        <label>Batch Size<input type="number" name="batch_size" value="32"></label>
+                        <label>Learning Rate<input type="number" step="0.0001" name="lr" value="0.0001"></label>
+                    </div>
+                    <button class="btn" type="submit" id="trainSubmitBtn">Start Training Job</button>
+                </form>
+                <div class="results" id="trainResultsBox"></div>
+            </div>
+        </div>
+
+        <script>
+            const menuBtn = document.getElementById('menuBtn');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            function toggleSidebar() { menuBtn.classList.toggle('active'); sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
+            menuBtn.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+
+            const trainForm = document.getElementById('trainForm');
+            const trainSubmitBtn = document.getElementById('trainSubmitBtn');
+            const trainResultsBox = document.getElementById('trainResultsBox');
+            trainForm.onsubmit = async (e) => {
+                e.preventDefault();
+                trainSubmitBtn.innerHTML = '<span class="spinner"></span> Training...';
+                trainSubmitBtn.disabled = true;
+                try {
+                    const formData = new FormData(trainForm);
+                    const payload = Object.fromEntries(formData.entries());
+                    payload.epochs = parseInt(payload.epochs);
+                    payload.batch_size = parseInt(payload.batch_size);
+                    payload.lr = parseFloat(payload.lr);
+                    const res = await fetch('/api/train', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    if (json.status === 'ok') {
+                        trainResultsBox.textContent = "=== Job Finished ===\n\n" + json.output;
+                        trainResultsBox.classList.add('visible');
+                    } else alert(json.message);
+                } catch (err) { alert(err.message); }
+                finally { trainSubmitBtn.innerHTML = 'Start Training Job'; trainSubmitBtn.disabled = false; }
+            };
+        </script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "visionbox"
+version = "0.1.0"
+description = "Image classification via fine-tuning torchvision pretrained models (extracted from a notebook)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "torch",
+  "torchvision",
+  "tqdm",
+  "numpy",
+  "pillow",
+  "transformers",
+]
+
+[project.optional-dependencies]
+dev = ["black", "ruff"]
+
+[project.scripts]
+visionbox-train = "visionbox.cli.train:main"
+visionbox-predict = "visionbox.cli.predict:main"
+visionbox-vqa = "visionbox.cli.vqa:main"
+visionbox-caption = "visionbox.cli.caption:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["visionbox*"]
