@@ -33,7 +33,7 @@
             font-family: 'Rubik', sans-serif;
             background-color: var(--dark);
             background-image:
-                linear-gradient(rgba(28, 51, 66, 0.6), rgba(28, 51, 66, 0.6)),
+                linear-gradient(rgba(28, 51, 66, 0.3), rgba(28, 51, 66, 0.3)),
                 url('hero-bg.jpg');
             background-size: cover;
             background-position: center;
@@ -580,6 +580,7 @@
                     const formData = new FormData();
                     formData.append('model', selectedModel);
                     formData.append('device', selectedDevice);
+                    formData.append('task', 'caption');
 
                     const res = await fetch('/api/preload', { method: 'POST', body: formData });
                     if (res.ok) {

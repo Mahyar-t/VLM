@@ -33,7 +33,7 @@
             font-family: 'Rubik', sans-serif;
             background-color: var(--dark);
             background-image:
-                linear-gradient(rgba(28, 51, 66, 0.6), rgba(28, 51, 66, 0.6)),
+                linear-gradient(rgba(28, 51, 66, 0.3), rgba(28, 51, 66, 0.3)),
                 url('hero-bg.jpg');
             background-size: cover;
             background-position: center;
@@ -464,23 +464,31 @@
                     <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
 
                     <div class="form-grid">
+                        <label>VQA Model
+                            <select id="modelSelect" name="model">
+                                <option value="" selected disabled>-- Select a Model --</option>
+                                <option value="Salesforce/blip-vqa-capfilt-large">BLIP VQA Capfilt Large (High Quality)
+                                </option>
+                                <option value="Salesforce/blip-vqa-base">BLIP VQA Base (Faster)</option>
+                            </select>
+                        </label>
                         <label>Question
                             <input type="text" name="question" placeholder="e.g. What color is the car in the image?"
                                 required>
                         </label>
                         <label>Device
-                            <select name="device">
+                            <select id="deviceSelect" name="device">
                                 <option value="cpu">CPU</option>
                                 <option value="cuda" selected>CUDA</option>
                             </select>
                         </label>
                     </div>
 
+                    <button class="btn" type="submit" id="submitBtn" disabled>Generate Answer</button>
+
                     <div class="results">
                         <p id="resultsBody" style="opacity: 0.5;">Waiting for question...</p>
                     </div>
-
-                    <button class="btn" type="submit" id="submitBtn">Generate Answer</button>
                 </form>
             </div>
         </div>
@@ -512,8 +520,42 @@
                 reader.readAsDataURL(file);
             }
 
+            const modelSelect = document.getElementById('modelSelect');
+            const deviceSelect = document.getElementById('deviceSelect');
+
+            async function triggerPreload() {
+                const selectedModel = modelSelect.value;
+                if (!selectedModel) return;
+
+                const selectedDevice = deviceSelect.value;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="spinner"></span> Loading Model to ${selectedDevice.toUpperCase()}...`;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('model', selectedModel);
+                    formData.append('device', selectedDevice);
+                    formData.append('task', 'vqa'); // Signal the Python engine to load the VQA weights
+
+                    const res = await fetch('/api/preload', { method: 'POST', body: formData });
+                    if (res.ok) {
+                        submitBtn.innerHTML = 'Generate Answer';
+                        submitBtn.disabled = false;
+                    } else {
+                        throw new Error("Failed to load model.");
+                    }
+                } catch (e) {
+                    submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
+                    submitBtn.disabled = false;
+                }
+            }
+
+            modelSelect.addEventListener('change', triggerPreload);
+            deviceSelect.addEventListener('change', triggerPreload);
+
             form.onsubmit = async (e) => {
                 e.preventDefault();
+                if (!modelSelect.value) return alert('Select a VQA Model first');
                 if (!fileInput.files.length) return alert('Select image');
                 const questionInput = document.querySelector('input[name="question"]').value;
                 if (!questionInput.trim()) return alert('Please enter a question');

@@ -174,10 +174,13 @@ public class PythonBridge {
 
     // ── vqa ──────────────────────────────────────────────────────────────────
 
-    public String vqa(String imagePath, String question, String device) throws Exception {
+    public String vqa(String imagePath, String question, String model, String device) throws Exception {
         Map<String, String> payload = new HashMap<>();
         payload.put("image_base64", encodeImageFile(imagePath));
         payload.put("question", question);
+        if (model != null && !model.isBlank()) {
+            payload.put("model_name", model);
+        }
         if (device != null && !device.isBlank()) {
             payload.put("device", device);
         }
@@ -233,10 +236,13 @@ public class PythonBridge {
 
     // ── preload ──────────────────────────────────────────────────────────────
 
-    public void preload(String model, String device) throws Exception {
+    public void preload(String model, String task, String device) throws Exception {
         Map<String, String> payload = new HashMap<>();
         if (model != null && !model.isBlank()) {
             payload.put("model_name", model);
+        }
+        if (task != null && !task.isBlank()) {
+            payload.put("task", task);
         }
         if (device != null && !device.isBlank()) {
             payload.put("device", device);

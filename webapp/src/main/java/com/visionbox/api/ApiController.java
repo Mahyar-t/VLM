@@ -89,6 +89,7 @@ public class ApiController {
     public ResponseEntity<?> vqa(
             @RequestParam("image") MultipartFile image,
             @RequestParam("question") String question,
+            @RequestParam(value = "model", required = false, defaultValue = "Salesforce/blip-vqa-base") String model,
             @RequestParam(value = "device", defaultValue = "cuda") String device) {
         try {
             // Save the uploaded image to a temp file
@@ -102,6 +103,7 @@ public class ApiController {
             String answer = bridge.vqa(
                     tempImage.toAbsolutePath().toString(),
                     question,
+                    model,
                     device);
 
             // Clean up
@@ -160,9 +162,10 @@ public class ApiController {
     @PostMapping("/api/preload")
     public ResponseEntity<Map<String, Object>> preloadModel(
             @RequestParam("model") String model,
+            @RequestParam(value = "task", required = false, defaultValue = "caption") String task,
             @RequestParam(value = "device", required = false, defaultValue = "cuda") String device) {
         try {
-            bridge.preload(model, device);
+            bridge.preload(model, task, device);
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("status", "ok");
             response.put("message", "Model " + model + " loaded to VRAM.");

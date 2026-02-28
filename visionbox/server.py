@@ -36,14 +36,15 @@ def load_caption_model(model_name: str, device: str):
             models[key] = (processor, model)
     return models[key]
 
-def load_vqa_model(device: str):
-    key = f"vqa_base_{device}"
+def load_vqa_model(model_name: str, device: str):
+    key = f"vqa_{model_name}_{device}"
     if key not in models:
-        print("Loading VQA model into VRAM...")
+        print(f"Loading VQA model {model_name} into VRAM...")
         dev = get_device(device)
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
-            model = BlipForQuestionAnswering.from_pretrained("Salesforce/blip-vqa-base", torch_dtype=torch.float16).to(dev)
+            # The base class is capable of loading both the base and capfilt-large models
+            processor = BlipProcessor.from_pretrained(model_name)
+            model = BlipForQuestionAnswering.from_pretrained(model_name, torch_dtype=torch.float16).to(dev)
             models[key] = (processor, model)
     return models[key]
 
@@ -69,6 +70,7 @@ class CaptionRequest(BaseModel):
 class VQARequest(BaseModel):
     image_base64: str
     question: str
+    model_name: str = "Salesforce/blip-vqa-base"
     device: str = "cuda"
 
 class PredictRequest(BaseModel):
@@ -79,13 +81,17 @@ class PredictRequest(BaseModel):
 
 class PreloadRequest(BaseModel):
     model_name: str
+    task: str = "caption"
     device: str = "cuda"
 
 @app.post("/api/preload")
 async def preload_model(req: PreloadRequest):
     try:
         # Just calling the caching loader warms it up in the background dictionary
-        load_caption_model(req.model_name, req.device)
+        if req.task == "vqa":
+            load_vqa_model(req.model_name, req.device)
+        else:
+            load_caption_model(req.model_name, req.device)
         return {"status": "ok", "message": f"Successfully loaded {req.model_name} to {req.device}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -123,7 +129,7 @@ async def answer_question(req: VQARequest):
         img = Image.open(io.BytesIO(contents)).convert("RGB")
         dev = get_device(req.device)
         
-        processor, model = load_vqa_model(req.device)
+        processor, model = load_vqa_model(req.model_name, req.device)
         
         inputs = processor(img, req.question, return_tensors="pt").to(dev, torch.float16)
         out = model.generate(**inputs, max_new_tokens=50)
