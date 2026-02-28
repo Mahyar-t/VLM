@@ -118,6 +118,43 @@ public class ApiController {
         }
     }
 
+    // ── Caption ──────────────────────────────────────────────────────────────
+
+    @PostMapping("/api/caption")
+    public ResponseEntity<Map<String, Object>> createCaption(
+            @RequestParam("image") MultipartFile image,
+            @RequestParam(value = "condition", required = false) String condition,
+            @RequestParam(value = "model", required = false, defaultValue = "Salesforce/blip-image-captioning-large") String model,
+            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device) {
+        try {
+            // Save the uploaded image to a temp file
+            String originalName = image.getOriginalFilename();
+            String suffix = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf('.'))
+                    : ".jpg";
+            Path tempImage = Files.createTempFile("caption_upload_", suffix);
+            image.transferTo(tempImage.toFile());
+
+            String answer = bridge.caption(
+                    tempImage.toAbsolutePath().toString(),
+                    condition,
+                    model,
+                    device);
+
+            // Clean up
+            Files.deleteIfExists(tempImage);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("caption", answer);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
     // ── Train ────────────────────────────────────────────────────────────────
 
     @PostMapping("/api/train")

@@ -136,6 +136,36 @@ public class PythonBridge {
         return lines[lines.length - 1].strip();
     }
 
+    // ── caption ──────────────────────────────────────────────────────────────
+
+    /**
+     * Runs: visionbox-caption --image <path> [--condition <condition>] [--model
+     * <model>] [--device
+     * <device>]
+     *
+     * @return the raw stdout output of the caption process, which is the generated
+     *         text
+     */
+    public String caption(String imagePath, String condition, String model, String device) throws Exception {
+        String script = resolveScriptPath("visionbox-caption");
+        List<String> cmd = new ArrayList<>(List.of(
+                script,
+                "--image", imagePath));
+        if (condition != null && !condition.isBlank()) {
+            cmd.addAll(List.of("--condition", condition));
+        }
+        if (model != null && !model.isBlank()) {
+            cmd.addAll(List.of("--model", model));
+        }
+        if (device != null && !device.isBlank()) {
+            cmd.addAll(List.of("--device", device));
+        }
+
+        String output = runProcess(cmd).strip();
+        String[] lines = output.split("\n");
+        return lines[lines.length - 1].strip();
+    }
+
     // ── internal ─────────────────────────────────────────────────────────────
 
     private String resolveScriptPath(String scriptName) {
