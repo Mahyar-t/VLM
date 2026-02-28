@@ -41,6 +41,9 @@ public class PythonBridge {
     @PostConstruct
     public void startPythonServer() {
         try {
+            // Kill any orphaned Python server from a previous session
+            killExistingServerOnPort(8000);
+
             // Start the Uvicorn FastAPI server in the background
             List<String> cmd = List.of(resolveScriptPath("python"), "-m", "uvicorn", "visionbox.server:app", "--port",
                     "8000");
@@ -53,6 +56,23 @@ public class PythonBridge {
             Thread.sleep(2000);
         } catch (Exception e) {
             System.err.println("Failed to start FastAPI server: " + e.getMessage());
+        }
+    }
+
+    private void killExistingServerOnPort(int port) {
+        try {
+            // Use lsof to find all PIDs on the port, then kill them
+            ProcessBuilder pb = new ProcessBuilder("bash", "-c",
+                    "lsof -t -i:" + port + " | xargs -r kill -9");
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            p.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+            if (p.exitValue() == 0) {
+                System.out.println("Killed orphaned process on port " + port);
+                Thread.sleep(500); // Brief pause to let the port fully release
+            }
+        } catch (Exception e) {
+            // Non-fatal: port may have been free already
         }
     }
 

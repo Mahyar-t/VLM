@@ -1,5 +1,6 @@
 import io
 import contextlib
+import asyncio
 import base64
 import torch
 from PIL import Image
@@ -87,11 +88,11 @@ class PreloadRequest(BaseModel):
 @app.post("/api/preload")
 async def preload_model(req: PreloadRequest):
     try:
-        # Just calling the caching loader warms it up in the background dictionary
+        # Run the blocking model load in a thread to avoid freezing the event loop
         if req.task == "vqa":
-            load_vqa_model(req.model_name, req.device)
+            await asyncio.to_thread(load_vqa_model, req.model_name, req.device)
         else:
-            load_caption_model(req.model_name, req.device)
+            await asyncio.to_thread(load_caption_model, req.model_name, req.device)
         return {"status": "ok", "message": f"Successfully loaded {req.model_name} to {req.device}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
