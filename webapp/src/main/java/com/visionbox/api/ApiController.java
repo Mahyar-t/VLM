@@ -155,6 +155,24 @@ public class ApiController {
         }
     }
 
+    // ── Preload ──────────────────────────────────────────────────────────────
+
+    @PostMapping("/api/preload")
+    public ResponseEntity<Map<String, Object>> preloadModel(
+            @RequestParam("model") String model,
+            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device) {
+        try {
+            bridge.preload(model, device);
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("message", "Model " + model + " loaded to VRAM.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
     // ── Train ────────────────────────────────────────────────────────────────
 
     @PostMapping("/api/train")

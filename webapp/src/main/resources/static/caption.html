@@ -465,9 +465,10 @@
 
                     <div class="form-grid">
                         <label>Captioning Model
-                            <select name="model">
-                                <option value="Salesforce/blip-image-captioning-large" selected>BLIP Large (High
-                                    Quality)</option>
+                            <select id="modelSelect" name="model">
+                                <option value="" selected disabled>-- Select a Model --</option>
+                                <option value="Salesforce/blip-image-captioning-large">BLIP Large (High Quality)
+                                </option>
                                 <option value="Salesforce/blip-image-captioning-base">BLIP Base (Faster)</option>
                             </select>
                         </label>
@@ -488,7 +489,7 @@
                         </label>
                     </div>
 
-                    <button class="btn" type="submit" id="submitBtn">Generate Caption</button>
+                    <button class="btn" type="submit" id="submitBtn" disabled>Generate Caption</button>
 
                     <div class="results" id="resultsContainer" style="display:none; flex-direction: column; gap: 1rem;">
                         <div id="timerContainer"
@@ -563,8 +564,36 @@
                 clearInterval(timerInterval);
             }
 
+            const modelSelect = document.getElementById('modelSelect');
+
+            // Handle Pre-loading
+            modelSelect.addEventListener('change', async () => {
+                const selectedModel = modelSelect.value;
+                if (!selectedModel) return;
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Loading Model to GPU...';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('model', selectedModel);
+                    // fetch implicitly to the background
+                    const res = await fetch('/api/preload', { method: 'POST', body: formData });
+                    if (res.ok) {
+                        submitBtn.innerHTML = 'Generate Caption';
+                        submitBtn.disabled = false;
+                    } else {
+                        throw new Error("Failed to load model.");
+                    }
+                } catch (e) {
+                    submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
+                    submitBtn.disabled = false;
+                }
+            });
+
             form.onsubmit = async (e) => {
                 e.preventDefault();
+                if (!modelSelect.value) return alert('Select a Captioning Model first');
                 if (!fileInput.files.length) return alert('Select image');
 
                 if (captionModeSelect.value === 'conditional' && !conditionInput.value.trim()) {

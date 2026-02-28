@@ -55,7 +55,7 @@ def predict_image(
 
         # Deep silencing during model load to prevent stdout pollution
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(dev)
+            model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32", torch_dtype=torch.float16).to(dev)
             processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
         
         if candidate_classes:

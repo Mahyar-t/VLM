@@ -20,7 +20,7 @@ def generate_caption(image_path: str, condition: str = None, device: str = "cuda
     # Deep silencing during model load to prevent stdout pollution
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
         processor = BlipProcessor.from_pretrained(model_name)
-        model = BlipForConditionalGeneration.from_pretrained(model_name).to(dev)
+        model = BlipForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.float16).to(dev)
     
     image = Image.open(image_path).convert("RGB")
     

@@ -16,6 +16,9 @@ dependencies = [
   "numpy",
   "pillow",
   "transformers",
+  "fastapi",
+  "uvicorn",
+  "python-multipart",
 ]
 
 [project.optional-dependencies]
