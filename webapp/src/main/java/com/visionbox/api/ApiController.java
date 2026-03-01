@@ -89,6 +89,7 @@ public class ApiController {
     public ResponseEntity<?> vqa(
             @RequestParam("image") MultipartFile image,
             @RequestParam("question") String question,
+            @RequestParam(value = "model", required = false, defaultValue = "Salesforce/blip-vqa-base") String model,
             @RequestParam(value = "device", defaultValue = "cuda") String device) {
         try {
             // Save the uploaded image to a temp file
@@ -102,6 +103,7 @@ public class ApiController {
             String answer = bridge.vqa(
                     tempImage.toAbsolutePath().toString(),
                     question,
+                    model,
                     device);
 
             // Clean up
@@ -125,7 +127,9 @@ public class ApiController {
             @RequestParam("image") MultipartFile image,
             @RequestParam(value = "condition", required = false) String condition,
             @RequestParam(value = "model", required = false, defaultValue = "Salesforce/blip-image-captioning-large") String model,
-            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device) {
+            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device,
+            @RequestParam(value = "maxPixels", required = false) Integer maxPixels,
+            @RequestParam(value = "precision", required = false, defaultValue = "4") String precision) {
         try {
             // Save the uploaded image to a temp file
             String originalName = image.getOriginalFilename();
@@ -139,7 +143,9 @@ public class ApiController {
                     tempImage.toAbsolutePath().toString(),
                     condition,
                     model,
-                    device);
+                    device,
+                    maxPixels,
+                    precision);
 
             // Clean up
             Files.deleteIfExists(tempImage);
@@ -152,6 +158,70 @@ public class ApiController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
                     Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
+    // ── Free Memory ──────────────────────────────────────────────────────────
+
+    @PostMapping("/api/free-memory")
+    public ResponseEntity<Map<String, Object>> freeMemory() {
+        try {
+            bridge.freeMemory();
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("message", "GPU memory cleared.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/api/gpu-stats")
+    public ResponseEntity<Map<String, Object>> gpuStats() {
+        try {
+            return ResponseEntity.ok(bridge.getGpuStats());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ── Preload ──────────────────────────────────────────────────────────────
+
+    @PostMapping("/api/preload")
+    public ResponseEntity<Map<String, Object>> preloadModel(
+            @RequestParam("model") String model,
+            @RequestParam(value = "task", required = false, defaultValue = "caption") String task,
+            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device,
+            @RequestParam(value = "precision", required = false, defaultValue = "4") String precision) {
+        // Fire-and-forget: launch preload in a background thread and return
+        // immediately. The frontend polls /api/preload-status for progress.
+        final String m = model, t = task, d = device, p = precision;
+        new Thread(() -> {
+            try {
+                bridge.preload(m, t, d, p);
+            } catch (Exception e) {
+                System.err.println("Background preload failed: " + e.getMessage());
+            }
+        }).start();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "ok");
+        response.put("message", "Preload started for " + model);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/api/preload-status")
+    public ResponseEntity<Map<String, Object>> preloadStatus(
+            @RequestParam("model_name") String modelName,
+            @RequestParam(value = "device", defaultValue = "cuda") String device,
+            @RequestParam(value = "precision", required = false, defaultValue = "4") String precision) {
+        try {
+            Map<String, Object> status = bridge.getPreloadStatus(modelName, device, precision);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("stage", "error", "percent", 0, "label", e.getMessage()));
         }
     }
 

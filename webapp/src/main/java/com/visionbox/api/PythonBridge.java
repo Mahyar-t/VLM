@@ -3,15 +3,25 @@ package com.visionbox.api;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
- * Utility that invokes the visionbox Python CLI commands (visionbox-predict,
- * visionbox-train)
- * via ProcessBuilder and parses their output.
+ * Utility that communicates with the Python backend.
+ * Uses HTTP (FastAPI) for VLMs (Captioning, VQA, CLIP) and ProcessBuilder for
+ * training.
  */
 @Component
 public class PythonBridge {
@@ -19,15 +29,62 @@ public class PythonBridge {
     @Value("${python.executable:python3}")
     private String pythonExec;
 
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+    private final String serverUrl = "http://localhost:8000/api";
+
+    // Hold reference to the server process so it shuts down when Java shuts down
+    private Process serverProcess;
+
+    @PostConstruct
+    public void startPythonServer() {
+        try {
+            // Kill any orphaned Python server from a previous session
+            killExistingServerOnPort(8000);
+
+            // Start the Uvicorn FastAPI server in the background
+            List<String> cmd = List.of(resolveScriptPath("python"), "-m", "uvicorn", "visionbox.server:app", "--port",
+                    "8000");
+            ProcessBuilder pb = new ProcessBuilder(cmd);
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.appendTo(new java.io.File("python_server.log")));
+            serverProcess = pb.start();
+            System.out.println(
+                    "Started VisionBox FastAPI Server on port 8000 in the background. Logs in python_server.log");
+
+            // Allow server a moment to start before requests hit it
+            Thread.sleep(2000);
+        } catch (Exception e) {
+            System.err.println("Failed to start FastAPI server: " + e.getMessage());
+        }
+    }
+
+    private void killExistingServerOnPort(int port) {
+        try {
+            // Use lsof to find all PIDs on the port, then kill them
+            ProcessBuilder pb = new ProcessBuilder("bash", "-c",
+                    "lsof -t -i:" + port + " | xargs -r kill -9");
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            p.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+            if (p.exitValue() == 0) {
+                System.out.println("Killed orphaned process on port " + port);
+                Thread.sleep(500); // Brief pause to let the port fully release
+            }
+        } catch (Exception e) {
+            // Non-fatal: port may have been free already
+        }
+    }
+
+    private String encodeImageFile(String imagePath) throws Exception {
+        byte[] bytes = Files.readAllBytes(Path.of(imagePath));
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
     // ── predict ──────────────────────────────────────────────────────────────
 
-    /**
-     * Runs: visionbox-predict --image <path> --weights <weights> --class-map
-     * <classMap>
-     * [--model <model>] [--device <device>] [--topk <topk>]
-     *
-     * @return list of maps: [{class: "cat", probability: 0.92}, ...]
-     */
     public List<Map<String, Object>> predict(String imagePath,
             String weightsPath,
             String classMapPath,
@@ -35,7 +92,37 @@ public class PythonBridge {
             String model,
             String device,
             int topk) throws Exception {
-        // Resolve the script path based on the configured pythonExec
+
+        // Use Fast HTTP API for CLIP
+        if ("clip-vit-base-patch32".equals(model)) {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("image_base64", encodeImageFile(imagePath));
+            if (candidateClasses != null && !candidateClasses.isBlank()) {
+                payload.put("candidate_classes", candidateClasses);
+            }
+            if (device != null && !device.isBlank()) {
+                payload.put("device", device);
+            }
+            payload.put("topk", topk);
+
+            String jsonBytes = mapper.writeValueAsString(payload);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(serverUrl + "/predict"))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofMinutes(5))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Python server error: " + response.body());
+            }
+
+            Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+            return (List<Map<String, Object>>) respMap.get("predictions");
+        }
+
+        // Use ProcessBuilder for standard TorchVision models (they load very fast)
         String script = resolveScriptPath("visionbox-predict");
         List<String> cmd = new ArrayList<>(List.of(
                 script,
@@ -59,7 +146,6 @@ public class PythonBridge {
 
         String stdout = runProcess(cmd);
 
-        // visionbox-predict prints lines like: class_name 0.9234
         List<Map<String, Object>> results = new ArrayList<>();
         for (String line : stdout.split("\n")) {
             line = line.strip();
@@ -78,12 +164,6 @@ public class PythonBridge {
 
     // ── train ────────────────────────────────────────────────────────────────
 
-    /**
-     * Runs: visionbox-train --data-dir <dataDir> [--model <model>] [--epochs <n>]
-     * ...
-     *
-     * @return the raw stdout output of the training process
-     */
     public String train(String dataDir,
             String model,
             Integer epochs,
@@ -116,54 +196,153 @@ public class PythonBridge {
 
     // ── vqa ──────────────────────────────────────────────────────────────────
 
-    /**
-     * Runs: visionbox-vqa --image <path> --question <question> [--device <device>]
-     *
-     * @return the raw stdout output of the vqa process, which is the answer
-     */
-    public String vqa(String imagePath, String question, String device) throws Exception {
-        String script = resolveScriptPath("visionbox-vqa");
-        List<String> cmd = new ArrayList<>(List.of(
-                script,
-                "--image", imagePath,
-                "--question", question));
+    public String vqa(String imagePath, String question, String model, String device) throws Exception {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("image_base64", encodeImageFile(imagePath));
+        payload.put("question", question);
+        if (model != null && !model.isBlank()) {
+            payload.put("model_name", model);
+        }
         if (device != null && !device.isBlank()) {
-            cmd.addAll(List.of("--device", device));
+            payload.put("device", device);
         }
 
-        String output = runProcess(cmd).strip();
-        String[] lines = output.split("\n");
-        return lines[lines.length - 1].strip();
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/vqa"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(5))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+        return (String) respMap.get("answer");
     }
 
     // ── caption ──────────────────────────────────────────────────────────────
 
-    /**
-     * Runs: visionbox-caption --image <path> [--condition <condition>] [--model
-     * <model>] [--device
-     * <device>]
-     *
-     * @return the raw stdout output of the caption process, which is the generated
-     *         text
-     */
-    public String caption(String imagePath, String condition, String model, String device) throws Exception {
-        String script = resolveScriptPath("visionbox-caption");
-        List<String> cmd = new ArrayList<>(List.of(
-                script,
-                "--image", imagePath));
+    public String caption(String imagePath, String condition, String model, String device, Integer maxPixels,
+            String precision)
+            throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("image_base64", encodeImageFile(imagePath));
         if (condition != null && !condition.isBlank()) {
-            cmd.addAll(List.of("--condition", condition));
+            payload.put("condition", condition);
         }
         if (model != null && !model.isBlank()) {
-            cmd.addAll(List.of("--model", model));
+            payload.put("model_name", model);
         }
         if (device != null && !device.isBlank()) {
-            cmd.addAll(List.of("--device", device));
+            payload.put("device", device);
+        }
+        if (maxPixels != null) {
+            payload.put("max_pixels", maxPixels);
+        }
+        if (precision != null && !precision.isBlank()) {
+            payload.put("precision", precision);
         }
 
-        String output = runProcess(cmd).strip();
-        String[] lines = output.split("\n");
-        return lines[lines.length - 1].strip();
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/caption"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(5))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+        return (String) respMap.get("caption");
+    }
+
+    // ── free memory ───────────────────────────────────────────────────────────
+
+    public void freeMemory() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/free-memory"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(15))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error during memory clear: " + response.body());
+        }
+    }
+
+    public Map<String, Object> getGpuStats() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/gpu-stats"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+        return respMap;
+    }
+
+    // ── preload ──────────────────────────────────────────────────────────────
+
+    public void preload(String model, String task, String device, String precision) throws Exception {
+        Map<String, String> payload = new HashMap<>();
+        if (model != null && !model.isBlank()) {
+            payload.put("model_name", model);
+        }
+        if (task != null && !task.isBlank()) {
+            payload.put("task", task);
+        }
+        if (device != null && !device.isBlank()) {
+            payload.put("device", device);
+        }
+        if (precision != null && !precision.isBlank()) {
+            payload.put("precision", precision);
+        }
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/preload"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(3))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error during preload: " + response.body());
+        }
+    }
+
+    public Map<String, Object> getPreloadStatus(String modelName, String device, String precision) throws Exception {
+        String url = serverUrl + "/preload-status?model_name=" + java.net.URLEncoder.encode(modelName, "UTF-8")
+                + "&device=" + java.net.URLEncoder.encode(device, "UTF-8");
+        if (precision != null && !precision.isBlank()) {
+            url += "&precision=" + java.net.URLEncoder.encode(precision, "UTF-8");
+        }
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), Map.class);
     }
 
     // ── internal ─────────────────────────────────────────────────────────────

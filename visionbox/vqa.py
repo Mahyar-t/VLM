@@ -20,7 +20,7 @@ def answer_question(image_path: str, question: str, device: str = "cuda") -> str
     # Deep silencing during model load to prevent stdout pollution
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
         processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
-        model = BlipForQuestionAnswering.from_pretrained("Salesforce/blip-vqa-base").to(dev)
+        model = BlipForQuestionAnswering.from_pretrained("Salesforce/blip-vqa-base", torch_dtype=torch.float16).to(dev)
     
     image = Image.open(image_path).convert("RGB")
     
