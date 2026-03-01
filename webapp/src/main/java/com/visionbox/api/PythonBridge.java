@@ -49,8 +49,10 @@ public class PythonBridge {
                     "8000");
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.appendTo(new java.io.File("python_server.log")));
             serverProcess = pb.start();
-            System.out.println("Started VisionBox FastAPI Server on port 8000 in the background.");
+            System.out.println(
+                    "Started VisionBox FastAPI Server on port 8000 in the background. Logs in python_server.log");
 
             // Allow server a moment to start before requests hit it
             Thread.sleep(2000);
@@ -218,6 +220,7 @@ public class PythonBridge {
             throw new RuntimeException("Python server error: " + response.body());
         }
 
+        @SuppressWarnings("unchecked")
         Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
         return (String) respMap.get("answer");
     }
@@ -254,6 +257,40 @@ public class PythonBridge {
         return (String) respMap.get("caption");
     }
 
+    // ── free memory ───────────────────────────────────────────────────────────
+
+    public void freeMemory() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/free-memory"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(15))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error during memory clear: " + response.body());
+        }
+    }
+
+    public Map<String, Object> getGpuStats() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/gpu-stats"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+        return respMap;
+    }
+
     // ── preload ──────────────────────────────────────────────────────────────
 
     public void preload(String model, String task, String device) throws Exception {
@@ -272,7 +309,7 @@ public class PythonBridge {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(serverUrl + "/preload"))
                 .header("Content-Type", "application/json")
-                .timeout(Duration.ofMinutes(5))
+                .timeout(Duration.ofMinutes(3))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
                 .build();
 

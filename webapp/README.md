@@ -1,142 +1,50 @@
-# imgcls-ft Web API (Java / Spring Boot)
+# VisionBox Web App
 
-A REST API built with **Spring Boot 3** that wraps the `imgcls-ft` Python image classification package. The Java server invokes the Python CLI commands (`imgcls-predict`, `imgcls-train`) via `ProcessBuilder`.
+The VisionBox web app provides a beautiful user interface for interacting with various Computer Vision models including Image Captioning, Visual Question Answering, and core Image Classification.
 
----
-
-## Prerequisites
-
-| Tool | Version |
-|------|---------|
-| **Java JDK** | 17+ |
-| **Maven** | 3.8+ |
-| **Python** | 3.9+ |
+The backend uses a **Java Spring Boot** application that acts as a bridge, automatically starting and serving the **FastAPI** Python application in the background!
 
 ---
 
-## 1 — Install the Python package
-
-```bash
-# from the project root (where pyproject.toml lives)
-cd /home/mahyart/Desktop/github_repos/VLM
-
-# create & activate a virtual environment (recommended)
-python3 -m venv .venv
-source .venv/bin/activate
-
-# install in editable mode
-pip install -e .
-```
-
-Verify the CLI is available:
-
-```bash
-imgcls-predict --help
-imgcls-train --help
-```
+## 1. Prerequisites
+- **Python** 3.9+ and **Java JDK** 17+
+- Activated environment (e.g. `conda activate vlm` or `.venv/bin/activate`)
+- Python packages installed (`pip install -e .`)
+- **Maven** installed
 
 ---
 
-## 2 — Build & run the API
+## 2. Run the Web Application
+
+The Java application automatically starts the Python Uvicorn server in the background for you. To start it:
 
 ```bash
-cd webapp
+cd /home/mahyart/Desktop/github_repos/VLM/webapp
 
-# build
-mvn clean package -DskipTests
-
-# run
+# run the spring boot app
 mvn spring-boot:run
 ```
 
-The server starts on **http://localhost:8080**. Open this URL in your browser to see the landing page with interactive documentation.
+---
+
+## 3. Accessing the UI
+
+Once the server says "Started Application", open your web browser and navigate to:
+
+👉 **http://localhost:8080**
+
+From the dashboard, you can access all features through the sidebar:
+- **Image Captioning (with Multimodal LLM Tab)**
+- **Visual Question Answering (VQA)**
+- **Inference & Fine-Tuning**
 
 ---
 
-## 3 — API Endpoints
+## 4. Troubleshooting Models / VRAM
 
-### Health check
+The app loads deep learning models directly into your GPU VRAM (`cuda`):
+- If you face `Out of Memory` (OOM) errors, click the red **`Reset the cache models`** button in the web app UI to unconditionally clear the loaded models.
+- Qwen2.5-VL-3B is loaded locally in 4-bit precision to save memory.
+- You can monitor your active GPU connection via the "GPU READY" indicator on the captioning page.
 
-```bash
-curl http://localhost:8080/api/health
-# {"status":"ok"}
-```
 
-### List supported models
-
-```bash
-curl http://localhost:8080/api/models
-# {"models":["mobilenet_v3_small","mobilenet_v3_large","resnet18","resnet50","densenet121","efficientnet_b0"]}
-```
-
-### Predict (classify an image)
-
-```bash
-curl -X POST http://localhost:8080/api/predict \
-  -F "image=@/path/to/photo.jpg" \
-  -F "weights=/path/to/best.pt" \
-  -F "class_map=/path/to/class_to_idx.json" \
-  -F "model=mobilenet_v3_small" \
-  -F "device=cpu" \
-  -F "topk=5"
-```
-
-Response:
-
-```json
-{
-  "status": "ok",
-  "predictions": [
-    {"class": "cat", "probability": 0.9234},
-    {"class": "dog", "probability": 0.0412}
-  ]
-}
-```
-
-### Train (fine-tune a model)
-
-```bash
-curl -X POST http://localhost:8080/api/train \
-  -H "Content-Type: application/json" \
-  -d '{
-    "data_dir": "/path/to/dataset",
-    "model": "mobilenet_v3_small",
-    "epochs": 10,
-    "batch_size": 32,
-    "lr": 0.0001,
-    "device": "cpu",
-    "checkpoint": "best.pt",
-    "save_class_map": "class_to_idx.json"
-  }'
-```
-
----
-
-## 4 — Configuration
-
-Edit `src/main/resources/application.properties`:
-
-| Property | Default | Description |
-|----------|---------|-------------|
-| `server.port` | `8080` | HTTP port |
-| `spring.servlet.multipart.max-file-size` | `50MB` | Max upload size |
-| `python.executable` | `python3` | Path to your Python binary |
-
----
-
-## Project structure
-
-```
-webapp/
-├── pom.xml
-├── README.md
-└── src/main/
-    ├── java/com/imgclsft/api/
-    │   ├── Application.java          # Spring Boot entry point
-    │   ├── ApiController.java        # REST endpoints
-    │   └── PythonBridge.java         # Calls Python CLI via ProcessBuilder
-    └── resources/
-        ├── application.properties
-        └── static/
-            └── index.html            # Landing page with predict form
-```

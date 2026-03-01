@@ -76,3 +76,21 @@ hist = fit(model, train_loader, val_loader, optimizer, device=get_device("cuda")
 
 - Default normalization mean/std match the notebook's Monkey Species dataset. If your dataset differs, pass `--mean` and `--std`, or change `DataConfig`.
 - The package supports a few common torchvision backbones; extend `imgcls_ft/model.py` if needed.
+
+## Run Qwen2.5-VL-3B via Terminal
+
+You can run the local Qwen2.5-VL-3B model directly from the command line without starting the web application.
+
+```bash
+python run_qwen_cli.py /path/to/image.jpg
+```
+
+**Custom Prompt:**
+```bash
+python run_qwen_cli.py /path/to/image.jpg --prompt "Extract all the text present in this image."
+```
+
+**Custom Output Length:**
+```bash
+python run_qwen_cli.py /path/to/image.jpg --max_tokens 128
+```

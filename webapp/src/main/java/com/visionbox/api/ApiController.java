@@ -157,6 +157,32 @@ public class ApiController {
         }
     }
 
+    // ── Free Memory ──────────────────────────────────────────────────────────
+
+    @PostMapping("/api/free-memory")
+    public ResponseEntity<Map<String, Object>> freeMemory() {
+        try {
+            bridge.freeMemory();
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("message", "GPU memory cleared.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/api/gpu-stats")
+    public ResponseEntity<Map<String, Object>> gpuStats() {
+        try {
+            return ResponseEntity.ok(bridge.getGpuStats());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("error", e.getMessage()));
+        }
+    }
+
     // ── Preload ──────────────────────────────────────────────────────────────
 
     @PostMapping("/api/preload")
@@ -164,16 +190,21 @@ public class ApiController {
             @RequestParam("model") String model,
             @RequestParam(value = "task", required = false, defaultValue = "caption") String task,
             @RequestParam(value = "device", required = false, defaultValue = "cuda") String device) {
-        try {
-            bridge.preload(model, task, device);
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("status", "ok");
-            response.put("message", "Model " + model + " loaded to VRAM.");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(
-                    Map.of("status", "error", "message", e.getMessage()));
-        }
+        // Fire-and-forget: launch preload in a background thread and return
+        // immediately. The frontend polls /api/preload-status for progress.
+        final String m = model, t = task, d = device;
+        new Thread(() -> {
+            try {
+                bridge.preload(m, t, d);
+            } catch (Exception e) {
+                System.err.println("Background preload failed: " + e.getMessage());
+            }
+        }).start();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "ok");
+        response.put("message", "Preload started for " + model);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/api/preload-status")
