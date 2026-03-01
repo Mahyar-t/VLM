@@ -242,10 +242,13 @@ async def free_memory():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/preload-status")
-async def preload_status(model_name: str, device: str):
+async def preload_status(model_name: str, device: str, precision: str = "4"):
     state_key = f"{model_name}::{device}"
     # If already in models cache, it's done regardless of state
-    caption_cached = f"caption_{model_name}_{device}" in models
+    if _is_qwen(model_name):
+        caption_cached = f"caption_{model_name}_{device}_{precision}" in models
+    else:
+        caption_cached = f"caption_{model_name}_{device}" in models
     vqa_cached = f"vqa_{model_name}_{device}" in models
     if caption_cached or vqa_cached:
         return {"stage": "done", "percent": 100, "label": "Ready!"}

@@ -215,9 +215,10 @@ public class ApiController {
     @GetMapping("/api/preload-status")
     public ResponseEntity<Map<String, Object>> preloadStatus(
             @RequestParam("model_name") String modelName,
-            @RequestParam(value = "device", defaultValue = "cuda") String device) {
+            @RequestParam(value = "device", defaultValue = "cuda") String device,
+            @RequestParam(value = "precision", required = false, defaultValue = "4") String precision) {
         try {
-            Map<String, Object> status = bridge.getPreloadStatus(modelName, device);
+            Map<String, Object> status = bridge.getPreloadStatus(modelName, device, precision);
             return ResponseEntity.ok(status);
         } catch (Exception e) {
             return ResponseEntity.ok(Map.of("stage", "error", "percent", 0, "label", e.getMessage()));

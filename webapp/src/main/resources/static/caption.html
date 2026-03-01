@@ -627,7 +627,7 @@
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>
                         </svg>
-                        Reset the cached models
+                        reset cached models
                     </button>
                 </div>
                 <form id="captionForm">
@@ -942,7 +942,12 @@
                             showPreloadError();
                             return;
                         }
-                        const statusRes = await fetch(`/api/preload-status?model_name=${encodeURIComponent(selectedModel)}&device=${encodeURIComponent(selectedDevice)}`);
+                        let precisionParam = '';
+                        if (activeTab === 'llm') {
+                            const pSel = document.getElementById('llmPrecisionSelect');
+                            if (pSel) precisionParam = `&precision=${encodeURIComponent(pSel.value)}`;
+                        }
+                        const statusRes = await fetch(`/api/preload-status?model_name=${encodeURIComponent(selectedModel)}&device=${encodeURIComponent(selectedDevice)}${precisionParam}`);
                         if (!statusRes.ok) return;
                         const status = await statusRes.json();
                         progressBar.style.width = status.percent + '%';
@@ -974,6 +979,14 @@
                 formData.append('model', selectedModel);
                 formData.append('device', selectedDevice);
                 formData.append('task', 'caption');
+
+                if (activeTab === 'llm') {
+                    const precisionSel = document.getElementById('llmPrecisionSelect');
+                    if (precisionSel) {
+                        formData.append('precision', precisionSel.value);
+                    }
+                }
+
                 fetch('/api/preload', { method: 'POST', body: formData }).catch(() => { });
 
                 function showPreloadError() {
@@ -1007,6 +1020,11 @@
 
             modelSelect.addEventListener('change', triggerPreload);
             deviceSelect.addEventListener('change', triggerPreload);
+
+            const llmPrecisionSelect = document.getElementById('llmPrecisionSelect');
+            if (llmPrecisionSelect) {
+                llmPrecisionSelect.addEventListener('change', triggerPreload);
+            }
 
             // --- Tab Logic ---
             let activeTab = 'traditional';

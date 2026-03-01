@@ -330,9 +330,12 @@ public class PythonBridge {
         }
     }
 
-    public Map<String, Object> getPreloadStatus(String modelName, String device) throws Exception {
+    public Map<String, Object> getPreloadStatus(String modelName, String device, String precision) throws Exception {
         String url = serverUrl + "/preload-status?model_name=" + java.net.URLEncoder.encode(modelName, "UTF-8")
                 + "&device=" + java.net.URLEncoder.encode(device, "UTF-8");
+        if (precision != null && !precision.isBlank()) {
+            url += "&precision=" + java.net.URLEncoder.encode(precision, "UTF-8");
+        }
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofSeconds(5))
