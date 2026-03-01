@@ -570,12 +570,7 @@
                                 <option value="Salesforce/blip-vqa-capfilt-large">BLIP VQA Capfilt Large (High Quality)
                                 </option>
                                 <option value="Salesforce/blip-vqa-base">BLIP VQA Base (Faster)</option>
-                                <option value="__local__">📁 Custom Local Path...</option>
                             </select>
-                        </label>
-                        <label id="localPathLabel" style="display:none;">Local Model Path
-                            <input type="text" id="localPathInput"
-                                placeholder="e.g. /home/user/models/blip-vqa or a HuggingFace ID" autocomplete="off">
                         </label>
                         <label>Question
                             <input type="text" name="question" placeholder="e.g. What color is the car in the image?"
@@ -659,11 +654,8 @@
             const deviceSelect = document.getElementById('deviceSelect');
 
             async function triggerPreload() {
-                const localPathInput = document.getElementById('localPathInput');
-                const selectedModel = modelSelect.value === '__local__'
-                    ? localPathInput.value.trim()
-                    : modelSelect.value;
-                if (!selectedModel || selectedModel === '__local__') return;
+                const selectedModel = modelSelect.value;
+                if (!selectedModel) return;
 
                 const selectedDevice = deviceSelect.value;
                 submitBtn.disabled = true;
@@ -720,25 +712,13 @@
                 }
             }
 
-            modelSelect.addEventListener('change', () => {
-                const localPathLabel = document.getElementById('localPathLabel');
-                const localPathInput = document.getElementById('localPathInput');
-                const isLocal = modelSelect.value === '__local__';
-                localPathLabel.style.display = isLocal ? 'flex' : 'none';
-                if (!isLocal) triggerPreload();
-                if (isLocal) {
-                    localPathInput.onblur = () => { if (localPathInput.value.trim()) triggerPreload(); };
-                }
-            });
+            modelSelect.addEventListener('change', triggerPreload);
             deviceSelect.addEventListener('change', triggerPreload);
 
             form.onsubmit = async (e) => {
                 e.preventDefault();
-                const localPathInput = document.getElementById('localPathInput');
-                const resolvedModel = modelSelect.value === '__local__'
-                    ? localPathInput.value.trim()
-                    : modelSelect.value;
-                if (!resolvedModel || resolvedModel === '__local__') return alert('Select a VQA Model first');
+                const resolvedModel = modelSelect.value;
+                if (!resolvedModel) return alert('Select a VQA Model first');
                 if (!fileInput.files.length) return alert('Select image');
                 const questionInput = document.querySelector('input[name="question"]').value;
                 if (!questionInput.trim()) return alert('Please enter a question');
