@@ -95,6 +95,13 @@ def load_qwen_caption_model(device: str):
         model.eval()
         models[key] = (processor, model)
         loading_states[state_key] = "done"
+        
+        # Free any intermediate weights/tensors created during loading
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
     return models[key]
 
 def load_caption_model(model_name: str, device: str):
@@ -197,11 +204,22 @@ async def preload_model(req: PreloadRequest):
 @app.post("/api/free-memory")
 async def free_memory():
     try:
-        models.clear() # Clear everything unconditionally
+        # Explicitly delete all references to models
+        for k in list(models.keys()):
+            val = models.pop(k)
+            del val
+            
+        models.clear()
         loading_states.clear()
+        
+        # Force garbage collection multiple times if needed
         gc.collect()
+        gc.collect()
+        
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+            
         return {"status": "ok", "message": "GPU memory freed successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -236,14 +254,14 @@ async def get_gpu_stats():
     props = torch.cuda.get_device_properties(device)
     total = props.total_memory / 1024**2
     allocated = torch.cuda.memory_allocated(device) / 1024**2
+    allocated = torch.cuda.memory_allocated(device) / 1024**2
     reserved = torch.cuda.memory_reserved(device) / 1024**2
-    # 'Used' in nvidia-smi sense is more like 'reserved' or a mix, 
-    # but for LLMs, 'allocated' is what the model actually holds.
-    # We'll show total and allocated.
+    # Ensure memory is somewhat accurate to NVIDIA-SMI by returning reserved memory,
+    # as PyTorch caches memory that contributes to the nvidia-smi total.
     return {
         "total": round(total, 2),
-        "used": round(allocated, 2),
-        "free": round(total - allocated, 2),
+        "used": round(reserved, 2),
+        "free": round(total - reserved, 2),
         "device_name": props.name
     }
 
