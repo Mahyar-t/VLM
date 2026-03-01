@@ -19,6 +19,7 @@ downloads/
 eggs/
 .eggs/
 parts/
+models/
 sdist/
 var/
 wheels/
