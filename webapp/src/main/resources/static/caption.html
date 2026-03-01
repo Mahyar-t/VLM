@@ -33,7 +33,8 @@
             font-family: 'Rubik', sans-serif;
             background-color: var(--dark);
             background-image:
-                linear-gradient(rgba(28, 51, 66, 0.3), rgba(28, 51, 66, 0.3)),
+                radial-gradient(ellipse at center, rgba(10, 25, 38, 0) 0%, rgba(10, 25, 38, 0.82) 100%),
+                linear-gradient(rgba(28, 51, 66, 0.25), rgba(28, 51, 66, 0.25)),
                 url('hero-bg.jpg');
             background-size: cover;
             background-position: center;
@@ -65,6 +66,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            padding-top: 7.5rem;
             animation: fadeIn 1s ease-out forwards;
         }
 
@@ -191,17 +193,107 @@
             transform: translateY(8px) rotate(45deg);
         }
 
-        .menu-btn.active span:nth-child(2) {
-        }
+        .menu-btn.active span:nth-child(2) {}
 
         .menu-btn.active span:nth-child(3) {
             transform: translateY(-8px) rotate(-45deg);
         }
 
+        /* -- Top Bar -- */
+        .top-bar {
+            position: fixed;
+            top: 40px;
+            left: 110px;
+            height: 50px;
+            width: fit-content;
+            z-index: 10;
+            animation: fadeIn 1s ease-out;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 0 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .top-bar.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-15px);
+        }
+
+        .top-bar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .top-bar-brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            color: #FFFFFF;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+            line-height: 1;
+        }
+
+        .top-bar-brand h1 a {
+            text-decoration: none;
+            color: inherit;
+            transition: opacity 0.3s;
+        }
+
+        .top-bar-brand h1 a:hover {
+            opacity: 0.8;
+        }
+
+        .top-bar-brand p {
+            font-size: 0.75rem;
+            color: var(--white);
+            opacity: 0.9;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1;
+            padding-right: 15px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .top-nav a {
+            color: var(--white) !important;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: color 0.3s, transform 0.3s;
+            opacity: 0.8;
+        }
+
+        .top-nav a:hover {
+            color: var(--primary) !important;
+            transform: translateY(-2px);
+            opacity: 1;
+        }
+
         /* -- Main Content -- */
         header {
             width: 100%;
-            padding: 3rem 4rem 2rem 110px;
+            padding: 7.5rem 4rem 2rem 110px;
             display: flex;
             align-items: center;
             justify-content: flex-start;
@@ -441,14 +533,21 @@
         <div style="margin-top:auto;"><a href="https://github.com/Mahyar-t/VLM" target="_blank"
                 class="sidebar-link">GitHub Repo</a></div>
     </aside>
+    <header class="top-bar">
+        <div class="top-bar-brand">
+            <h1><a href="/">VisionBox</a></h1>
+            <p>Advanced Computer Vision Toolkit</p>
+        </div>
+        <nav class="top-nav">
+            <a href="/about.html">About Us</a>
+            <a href="/contact.html">Contact</a>
+        </nav>
+    </header>
+
 
     <div class="main-wrapper">
 
-        <header>
-            <div class="header-brand">
-                <h1><a href="/">VisionBox</a></h1>
-            </div>
-        </header>
+
 
         <div class="container">
             <div class="card">
@@ -479,269 +578,285 @@
                             <input type="text" id="localPathInput"
                                 placeholder="e.g. /home/user/models/blip2 or custom HuggingFace ID" autocomplete="off">
                         </label>
-                    <label>Captioning Mode
-                        <select id="captionModeSelect" name="captionMode">
-                            <option value="unconditional" selected>Unconditional Captioning</option>
-                            <option value="conditional">Conditional Captioning</option>
-                        </select>
-                    </label>
-                    <label id="conditionLabel" style="display:none;">Starting Text Condition
-                        <input type="text" name="condition" placeholder="e.g. A photograph of">
-                    </label>
-                    <label>Device
-                        <select id="deviceSelect" name="device">
-                            <option value="cpu">CPU</option>
-                            <option value="cuda" selected>CUDA</option>
-                        </select>
-                    </label>
-            </div>
-
-            <button class="btn" type="submit" id="submitBtn" disabled>Generate Caption</button>
-
-            <!-- Progress bar shown during model loading -->
-            <div id="loadProgressContainer" style="display:none; width:100%; margin-top: 0.5rem;">
-                <div
-                    style="display:flex; justify-content:space-between; font-size:0.75rem; color: var(--primary); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">
-                    <span id="loadStageLabel">Loading...</span>
-                    <span id="loadPercent">0%</span>
-                </div>
-                <div style="background:rgba(255,255,255,0.08); border-radius:99px; height:6px; overflow:hidden;">
-                    <div id="loadProgressBar"
-                        style="height:100%; width:0%; background: linear-gradient(90deg, var(--primary), #00f0ff); border-radius:99px; transition: width 0.4s ease;">
+                        <label>Captioning Mode
+                            <select id="captionModeSelect" name="captionMode">
+                                <option value="unconditional" selected>Unconditional Captioning</option>
+                                <option value="conditional">Conditional Captioning</option>
+                            </select>
+                        </label>
+                        <label id="conditionLabel" style="display:none;">Starting Text Condition
+                            <input type="text" name="condition" placeholder="e.g. A photograph of">
+                        </label>
+                        <label>Device
+                            <select id="deviceSelect" name="device">
+                                <option value="cpu">CPU</option>
+                                <option value="cuda" selected>CUDA</option>
+                            </select>
+                        </label>
                     </div>
-                </div>
-            </div>
 
-            <div class="results" id="resultsContainer" style="display:none; flex-direction: column; gap: 1rem;">
-                <div id="timerContainer"
-                    style="font-size: 0.8rem; color: var(--primary); letter-spacing: 1px; font-weight: 700; text-transform: uppercase;">
-                    Thinking Time: <span id="timerValue">0.0s</span>
-                </div>
-                <p id="resultsBody">Generating...</p>
+                    <button class="btn" type="submit" id="submitBtn" disabled>Generate Caption</button>
+
+                    <!-- Progress bar shown during model loading -->
+                    <div id="loadProgressContainer" style="display:none; width:100%; margin-top: 0.5rem;">
+                        <div
+                            style="display:flex; justify-content:space-between; font-size:0.75rem; color: var(--primary); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">
+                            <span id="loadStageLabel">Loading...</span>
+                            <span id="loadPercent">0%</span>
+                        </div>
+                        <div
+                            style="background:rgba(255,255,255,0.08); border-radius:99px; height:6px; overflow:hidden;">
+                            <div id="loadProgressBar"
+                                style="height:100%; width:0%; background: linear-gradient(90deg, var(--primary), #00f0ff); border-radius:99px; transition: width 0.4s ease;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results" id="resultsContainer" style="display:none; flex-direction: column; gap: 1rem;">
+                        <div id="timerContainer"
+                            style="font-size: 0.8rem; color: var(--primary); letter-spacing: 1px; font-weight: 700; text-transform: uppercase;">
+                            Thinking Time: <span id="timerValue">0.0s</span>
+                        </div>
+                        <p id="resultsBody">Generating...</p>
+                    </div>
+                </form>
             </div>
-            </form>
         </div>
-    </div>
 
-    <script>
-        const menuBtn = document.getElementById('menuBtn');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        function toggleSidebar() { menuBtn.classList.toggle('active'); sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
-        menuBtn.addEventListener('click', toggleSidebar);
-        overlay.addEventListener('click', toggleSidebar);
+        <script>
+            const menuBtn = document.getElementById('menuBtn');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            function toggleSidebar() { menuBtn.classList.toggle('active'); sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
+            menuBtn.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
 
-        const fileInput = document.getElementById('imageInput');
-        const dropZone = document.getElementById('dropZone');
-        const previewContainer = document.getElementById('previewContainer');
-        const previewImage = document.getElementById('previewImage');
-        const removePhotoBtn = document.getElementById('removePhotoBtn');
-        const form = document.getElementById('captionForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const resultsContainer = document.getElementById('resultsContainer');
-        const resultsBody = document.getElementById('resultsBody');
-        const timerContainer = document.getElementById('timerContainer');
-        const timerValue = document.getElementById('timerValue');
-
-        const captionModeSelect = document.getElementById('captionModeSelect');
-        const conditionLabel = document.getElementById('conditionLabel');
-        const conditionInput = document.querySelector('input[name="condition"]');
-
-        captionModeSelect.addEventListener('change', () => {
-            if (captionModeSelect.value === 'conditional') {
-                conditionLabel.style.display = 'flex';
-            } else {
-                conditionLabel.style.display = 'none';
-                conditionInput.value = '';
-            }
-        });
-
-        dropZone.onclick = () => fileInput.click();
-        fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
-        removePhotoBtn.onclick = (e) => {
-            e.stopPropagation();
-            fileInput.value = '';
-            previewContainer.classList.remove('active');
-            resultsContainer.style.display = 'none';
-        };
-
-        function showPreview(file) {
-            const reader = new FileReader();
-            reader.onload = e => { previewImage.src = e.target.result; previewContainer.classList.add('active'); };
-            reader.readAsDataURL(file);
-        }
-
-        let timerInterval;
-        function startTimer() {
-            let start = Date.now();
-            timerValue.innerText = '0.0s';
-            timerInterval = setInterval(() => {
-                let elapsed = (Date.now() - start) / 1000;
-                timerValue.innerText = elapsed.toFixed(1) + 's';
-            }, 100);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
-
-        const modelSelect = document.getElementById('modelSelect');
-
-        const deviceSelect = document.getElementById('deviceSelect');
-
-        async function triggerPreload() {
-            const localPathInput = document.getElementById('localPathInput');
-            const selectedModel = modelSelect.value === '__local__'
-                ? localPathInput.value.trim()
-                : modelSelect.value;
-            if (!selectedModel || selectedModel === '__local__') return;
-
-            const selectedDevice = deviceSelect.value;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="spinner"></span> Loading...`;
-
-            // Show the progress bar
-            const progressContainer = document.getElementById('loadProgressContainer');
-            const progressBar = document.getElementById('loadProgressBar');
-            const stageLabel = document.getElementById('loadStageLabel');
-            const percentLabel = document.getElementById('loadPercent');
-            progressContainer.style.display = 'block';
-            progressBar.style.width = '5%';
-            stageLabel.textContent = 'Queued...';
-            percentLabel.textContent = '5%';
-
-            // Start polling for real stage updates
-            let pollInterval = setInterval(async () => {
-                try {
-                    const statusRes = await fetch(`/api/preload-status?model_name=${encodeURIComponent(selectedModel)}&device=${encodeURIComponent(selectedDevice)}`);
-                    if (!statusRes.ok) return;
-                    const status = await statusRes.json();
-                    progressBar.style.width = status.percent + '%';
-                    stageLabel.textContent = status.label;
-                    percentLabel.textContent = status.percent + '%';
-                    if (status.stage === 'done' || status.stage === 'error') {
-                        clearInterval(pollInterval);
+            // Scroll-to-hide top bar
+            (function () {
+                var lastScroll = 0;
+                var topBar = document.querySelector('.top-bar');
+                window.addEventListener('scroll', function () {
+                    var current = window.scrollY || document.documentElement.scrollTop;
+                    if (current > lastScroll && current > 80) {
+                        topBar.classList.add('hidden');
+                    } else {
+                        topBar.classList.remove('hidden');
                     }
-                } catch (_) { /* ignore transient errors */ }
-            }, 500);
+                    lastScroll = current <= 0 ? 0 : current;
+                }, { passive: true });
+            })();
 
-            try {
-                const formData = new FormData();
-                formData.append('model', selectedModel);
-                formData.append('device', selectedDevice);
-                formData.append('task', 'caption');
+            const fileInput = document.getElementById('imageInput');
+            const dropZone = document.getElementById('dropZone');
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const removePhotoBtn = document.getElementById('removePhotoBtn');
+            const form = document.getElementById('captionForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const resultsBody = document.getElementById('resultsBody');
+            const timerContainer = document.getElementById('timerContainer');
+            const timerValue = document.getElementById('timerValue');
 
-                const res = await fetch('/api/preload', { method: 'POST', body: formData });
-                clearInterval(pollInterval);
-                if (res.ok) {
-                    progressBar.style.width = '100%';
-                    stageLabel.textContent = 'Ready!';
-                    percentLabel.textContent = '100%';
-                    setTimeout(() => { progressContainer.style.display = 'none'; }, 1000);
-                    submitBtn.innerHTML = 'Generate Caption';
-                    submitBtn.disabled = false;
+            const captionModeSelect = document.getElementById('captionModeSelect');
+            const conditionLabel = document.getElementById('conditionLabel');
+            const conditionInput = document.querySelector('input[name="condition"]');
+
+            captionModeSelect.addEventListener('change', () => {
+                if (captionModeSelect.value === 'conditional') {
+                    conditionLabel.style.display = 'flex';
                 } else {
-                    throw new Error("Failed to load model.");
+                    conditionLabel.style.display = 'none';
+                    conditionInput.value = '';
                 }
-            } catch (e) {
-                clearInterval(pollInterval);
-                progressContainer.style.display = 'none';
-                submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
-                submitBtn.disabled = false;
-            }
-        }
+            });
 
-        modelSelect.addEventListener('change', () => {
-            const localPathLabel = document.getElementById('localPathLabel');
-            const localPathInput = document.getElementById('localPathInput');
-            const isLocal = modelSelect.value === '__local__';
-            localPathLabel.style.display = isLocal ? 'flex' : 'none';
-            if (!isLocal) triggerPreload();
-            if (isLocal) {
-                localPathInput.onblur = () => { if (localPathInput.value.trim()) triggerPreload(); };
-            }
-        });
-        deviceSelect.addEventListener('change', triggerPreload);
+            dropZone.onclick = () => fileInput.click();
+            fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
+            removePhotoBtn.onclick = (e) => {
+                e.stopPropagation();
+                fileInput.value = '';
+                previewContainer.classList.remove('active');
+                resultsContainer.style.display = 'none';
+            };
 
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            const localPathInput = document.getElementById('localPathInput');
-            const resolvedModel = modelSelect.value === '__local__'
-                ? localPathInput.value.trim()
-                : modelSelect.value;
-            if (!resolvedModel || resolvedModel === '__local__') return alert('Select a Captioning Model first');
-            if (!fileInput.files.length) return alert('Select image');
-
-            if (captionModeSelect.value === 'conditional' && !conditionInput.value.trim()) {
-                return alert('Please enter a starting text condition for Conditional Captioning');
+            function showPreview(file) {
+                const reader = new FileReader();
+                reader.onload = e => { previewImage.src = e.target.result; previewContainer.classList.add('active'); };
+                reader.readAsDataURL(file);
             }
 
-            resultsContainer.style.display = 'flex';
-            resultsBody.innerHTML = 'Generating...';
-            resultsBody.style.opacity = 1;
-            resultsBody.style.color = "var(--white)";
-            resultsBody.style.fontSize = "1.5rem";
-
-            submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
-            submitBtn.disabled = true;
-
-            startTimer();
-
-            let formData = new FormData(form);
-            if (captionModeSelect.value === 'unconditional') {
-                formData.delete('condition');
+            let timerInterval;
+            function startTimer() {
+                let start = Date.now();
+                timerValue.innerText = '0.0s';
+                timerInterval = setInterval(() => {
+                    let elapsed = (Date.now() - start) / 1000;
+                    timerValue.innerText = elapsed.toFixed(1) + 's';
+                }, 100);
             }
-            formData.delete('captionMode');
 
-            try {
-                const res = await fetch('/api/caption', { method: 'POST', body: formData });
-                const json = await res.json();
-                stopTimer();
-                if (json.status === 'ok') {
-                    resultsBody.innerHTML = json.caption;
-                    resultsBody.style.color = "var(--primary)";
-                    resultsBody.style.fontWeight = "bold";
-                    resultsBody.style.fontSize = "2rem";
-                } else {
-                    alert(json.message);
+            function stopTimer() {
+                clearInterval(timerInterval);
+            }
+
+            const modelSelect = document.getElementById('modelSelect');
+
+            const deviceSelect = document.getElementById('deviceSelect');
+
+            async function triggerPreload() {
+                const localPathInput = document.getElementById('localPathInput');
+                const selectedModel = modelSelect.value === '__local__'
+                    ? localPathInput.value.trim()
+                    : modelSelect.value;
+                if (!selectedModel || selectedModel === '__local__') return;
+
+                const selectedDevice = deviceSelect.value;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="spinner"></span> Loading...`;
+
+                // Show the progress bar
+                const progressContainer = document.getElementById('loadProgressContainer');
+                const progressBar = document.getElementById('loadProgressBar');
+                const stageLabel = document.getElementById('loadStageLabel');
+                const percentLabel = document.getElementById('loadPercent');
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '5%';
+                stageLabel.textContent = 'Queued...';
+                percentLabel.textContent = '5%';
+
+                // Start polling for real stage updates
+                let pollInterval = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch(`/api/preload-status?model_name=${encodeURIComponent(selectedModel)}&device=${encodeURIComponent(selectedDevice)}`);
+                        if (!statusRes.ok) return;
+                        const status = await statusRes.json();
+                        progressBar.style.width = status.percent + '%';
+                        stageLabel.textContent = status.label;
+                        percentLabel.textContent = status.percent + '%';
+                        if (status.stage === 'done' || status.stage === 'error') {
+                            clearInterval(pollInterval);
+                        }
+                    } catch (_) { /* ignore transient errors */ }
+                }, 500);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('model', selectedModel);
+                    formData.append('device', selectedDevice);
+                    formData.append('task', 'caption');
+
+                    const res = await fetch('/api/preload', { method: 'POST', body: formData });
+                    clearInterval(pollInterval);
+                    if (res.ok) {
+                        progressBar.style.width = '100%';
+                        stageLabel.textContent = 'Ready!';
+                        percentLabel.textContent = '100%';
+                        setTimeout(() => { progressContainer.style.display = 'none'; }, 1000);
+                        submitBtn.innerHTML = 'Generate Caption';
+                        submitBtn.disabled = false;
+                    } else {
+                        throw new Error("Failed to load model.");
+                    }
+                } catch (e) {
+                    clearInterval(pollInterval);
+                    progressContainer.style.display = 'none';
+                    submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
+                    submitBtn.disabled = false;
+                }
+            }
+
+            modelSelect.addEventListener('change', () => {
+                const localPathLabel = document.getElementById('localPathLabel');
+                const localPathInput = document.getElementById('localPathInput');
+                const isLocal = modelSelect.value === '__local__';
+                localPathLabel.style.display = isLocal ? 'flex' : 'none';
+                if (!isLocal) triggerPreload();
+                if (isLocal) {
+                    localPathInput.onblur = () => { if (localPathInput.value.trim()) triggerPreload(); };
+                }
+            });
+            deviceSelect.addEventListener('change', triggerPreload);
+
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const localPathInput = document.getElementById('localPathInput');
+                const resolvedModel = modelSelect.value === '__local__'
+                    ? localPathInput.value.trim()
+                    : modelSelect.value;
+                if (!resolvedModel || resolvedModel === '__local__') return alert('Select a Captioning Model first');
+                if (!fileInput.files.length) return alert('Select image');
+
+                if (captionModeSelect.value === 'conditional' && !conditionInput.value.trim()) {
+                    return alert('Please enter a starting text condition for Conditional Captioning');
+                }
+
+                resultsContainer.style.display = 'flex';
+                resultsBody.innerHTML = 'Generating...';
+                resultsBody.style.opacity = 1;
+                resultsBody.style.color = "var(--white)";
+                resultsBody.style.fontSize = "1.5rem";
+
+                submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+                submitBtn.disabled = true;
+
+                startTimer();
+
+                let formData = new FormData(form);
+                if (captionModeSelect.value === 'unconditional') {
+                    formData.delete('condition');
+                }
+                formData.delete('captionMode');
+
+                try {
+                    const res = await fetch('/api/caption', { method: 'POST', body: formData });
+                    const json = await res.json();
+                    stopTimer();
+                    if (json.status === 'ok') {
+                        resultsBody.innerHTML = json.caption;
+                        resultsBody.style.color = "var(--primary)";
+                        resultsBody.style.fontWeight = "bold";
+                        resultsBody.style.fontSize = "2rem";
+                    } else {
+                        alert(json.message);
+                        resultsBody.innerHTML = "Error occurred.";
+                        resultsBody.style.opacity = 0.5;
+                    }
+                } catch (err) {
+                    stopTimer();
+                    alert(err.message);
                     resultsBody.innerHTML = "Error occurred.";
                     resultsBody.style.opacity = 0.5;
                 }
-            } catch (err) {
-                stopTimer();
-                alert(err.message);
-                resultsBody.innerHTML = "Error occurred.";
-                resultsBody.style.opacity = 0.5;
-            }
-            finally { submitBtn.innerHTML = 'Generate Caption'; submitBtn.disabled = false; }
-        };
-    </script>
-<script>
-// Page fade-in on load
-document.addEventListener("DOMContentLoaded", function() {
-  requestAnimationFrame(function() { document.body.style.opacity = "1"; });
-});
-// Fade-out only for sidebar navigation links (not the menu toggle or form links)
-document.querySelectorAll("a.sidebar-link, .sidebar-header a").forEach(function(link) {
-  link.addEventListener("click", function(e) {
-    var href = link.getAttribute("href");
-    if (href && href !== window.location.pathname && !href.startsWith("#")) {
-      e.preventDefault();
-      // Close sidebar first, then fade and navigate
-      var sidebar = document.getElementById("sidebar");
-      var overlay = document.getElementById("overlay");
-      var menuBtn = document.getElementById("menuBtn");
-      if (sidebar) { sidebar.classList.remove("active"); }
-      if (overlay) { overlay.classList.remove("active"); }
-      if (menuBtn) { menuBtn.classList.remove("active"); }
-      setTimeout(function() {
-        document.body.style.opacity = "0";
-        setTimeout(function() { window.location.href = href; }, 620);
-      }, 150);
-    }
-  });
-});
-</script>
+                finally { submitBtn.innerHTML = 'Generate Caption'; submitBtn.disabled = false; }
+            };
+        </script>
+        <script>
+            // Page fade-in on load
+            document.addEventListener("DOMContentLoaded", function () {
+                requestAnimationFrame(function () { document.body.style.opacity = "1"; });
+            });
+            // Fade-out only for sidebar navigation links (not the menu toggle or form links)
+            document.querySelectorAll("a.sidebar-link, .sidebar-header a, .top-nav a").forEach(function (link) {
+                link.addEventListener("click", function (e) {
+                    var href = link.getAttribute("href");
+                    if (href && href !== window.location.pathname && !href.startsWith("#")) {
+                        e.preventDefault();
+                        // Close sidebar first, then fade and navigate
+                        var sidebar = document.getElementById("sidebar");
+                        var overlay = document.getElementById("overlay");
+                        var menuBtn = document.getElementById("menuBtn");
+                        if (sidebar) { sidebar.classList.remove("active"); }
+                        if (overlay) { overlay.classList.remove("active"); }
+                        if (menuBtn) { menuBtn.classList.remove("active"); }
+                        setTimeout(function () {
+                            document.body.style.opacity = "0";
+                            setTimeout(function () { window.location.href = href; }, 620);
+                        }, 150);
+                    }
+                });
+            });
+        </script>
 </body>
 
 </html>

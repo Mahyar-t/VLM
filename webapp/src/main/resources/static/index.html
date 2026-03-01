@@ -32,7 +32,8 @@
             font-family: 'Rubik', sans-serif;
             background-color: var(--dark);
             background-image:
-                linear-gradient(rgba(28, 51, 66, 0.3), rgba(28, 51, 66, 0.3)),
+                radial-gradient(ellipse at center, rgba(10, 25, 38, 0) 0%, rgba(10, 25, 38, 0.82) 100%),
+                linear-gradient(rgba(28, 51, 66, 0.25), rgba(28, 51, 66, 0.25)),
                 url('hero-bg.jpg');
             background-size: cover;
             background-position: center;
@@ -44,7 +45,7 @@
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.6s ease;
+            transition: opacity 0.1s ease;
         }
 
 
@@ -176,48 +177,101 @@
             transform: translateY(8px) rotate(45deg);
         }
 
-        .menu-btn.active span:nth-child(2) {
-        }
+        .menu-btn.active span:nth-child(2) {}
 
         .menu-btn.active span:nth-child(3) {
             transform: translateY(-8px) rotate(-45deg);
         }
 
-        /* -- Main Content -- */
-        .hero {
-            max-width: 1200px;
-            width: 100%;
-            text-align: center;
+        /* -- Top Bar -- */
+        .top-bar {
+            position: fixed;
+            top: 40px;
+            left: 110px;
+            height: 50px;
+            width: fit-content;
             z-index: 10;
             animation: fadeIn 1s ease-out;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 0 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.35s ease, transform 0.35s ease;
         }
 
-        .hero h1 {
-            font-size: 8rem;
+        .top-bar.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-15px);
+        }
+
+        .top-bar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .top-bar-brand h1 {
+            font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 2rem;
-            letter-spacing: -2px;
+            margin: 0;
+            letter-spacing: -1px;
             text-transform: uppercase;
             color: #FFFFFF;
-            filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.1));
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+            line-height: 1;
         }
 
-        .hero h1 a {
+        .top-bar-brand h1 a {
             text-decoration: none;
             color: inherit;
             transition: opacity 0.3s;
         }
 
-        .hero h1 a:hover {
+        .top-bar-brand h1 a:hover {
             opacity: 0.8;
         }
 
-        .hero p {
-            font-size: 1.2rem;
-            color: var(--primary);
-            opacity: 0.8;
-            letter-spacing: 4px;
+        .top-bar-brand p {
+            font-size: 0.75rem;
+            color: var(--white);
+            opacity: 0.9;
+            letter-spacing: 2px;
             text-transform: uppercase;
+            margin: 0;
+            line-height: 1;
+            padding-right: 15px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .top-nav a {
+            color: var(--white) !important;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: color 0.3s, transform 0.3s;
+            opacity: 0.8;
+        }
+
+        .top-nav a:hover {
+            color: var(--primary) !important;
+            transform: translateY(-2px);
+            opacity: 1;
         }
 
         /* Overlay to close sidebar */
@@ -267,10 +321,16 @@
         </div>
     </aside>
 
-    <main class="hero">
-        <p>Advanced Computer Vision Toolkit</p>
-        <h1><a href="/">VisionBox</a></h1>
-    </main>
+    <header class="top-bar">
+        <div class="top-bar-brand">
+            <h1><a href="/">VisionBox</a></h1>
+            <p>Advanced Computer Vision Toolkit</p>
+        </div>
+        <nav class="top-nav">
+            <a href="/about.html">About Us</a>
+            <a href="/contact.html">Contact</a>
+        </nav>
+    </header>
 
     <script>
         const menuBtn = document.getElementById('menuBtn');
@@ -285,34 +345,49 @@
 
         menuBtn.addEventListener('click', toggleSidebar);
         overlay.addEventListener('click', toggleSidebar);
+
+        // Scroll-to-hide top bar
+        (function () {
+            var lastScroll = 0;
+            var topBar = document.querySelector('.top-bar');
+            window.addEventListener('scroll', function () {
+                var current = window.scrollY || document.documentElement.scrollTop;
+                if (current > lastScroll && current > 80) {
+                    topBar.classList.add('hidden');
+                } else {
+                    topBar.classList.remove('hidden');
+                }
+                lastScroll = current <= 0 ? 0 : current;
+            }, { passive: true });
+        })();
     </script>
 
-<script>
-// Page fade-in on load
-document.addEventListener("DOMContentLoaded", function() {
-  requestAnimationFrame(function() { document.body.style.opacity = "1"; });
-});
-// Fade-out only for sidebar navigation links (not the menu toggle or form links)
-document.querySelectorAll("a.sidebar-link, .sidebar-header a").forEach(function(link) {
-  link.addEventListener("click", function(e) {
-    var href = link.getAttribute("href");
-    if (href && href !== window.location.pathname && !href.startsWith("#")) {
-      e.preventDefault();
-      // Close sidebar first, then fade and navigate
-      var sidebar = document.getElementById("sidebar");
-      var overlay = document.getElementById("overlay");
-      var menuBtn = document.getElementById("menuBtn");
-      if (sidebar) { sidebar.classList.remove("active"); }
-      if (overlay) { overlay.classList.remove("active"); }
-      if (menuBtn) { menuBtn.classList.remove("active"); }
-      setTimeout(function() {
-        document.body.style.opacity = "0";
-        setTimeout(function() { window.location.href = href; }, 620);
-      }, 150);
-    }
-  });
-});
-</script>
+    <script>
+        // Page fade-in on load
+        document.addEventListener("DOMContentLoaded", function () {
+            requestAnimationFrame(function () { document.body.style.opacity = "1"; });
+        });
+        // Fade-out only for sidebar navigation links (not the menu toggle or form links)
+        document.querySelectorAll("a.sidebar-link, .sidebar-header a, .top-nav a").forEach(function (link) {
+            link.addEventListener("click", function (e) {
+                var href = link.getAttribute("href");
+                if (href && href !== window.location.pathname && !href.startsWith("#")) {
+                    e.preventDefault();
+                    // Close sidebar first, then fade and navigate
+                    var sidebar = document.getElementById("sidebar");
+                    var overlay = document.getElementById("overlay");
+                    var menuBtn = document.getElementById("menuBtn");
+                    if (sidebar) { sidebar.classList.remove("active"); }
+                    if (overlay) { overlay.classList.remove("active"); }
+                    if (menuBtn) { menuBtn.classList.remove("active"); }
+                    setTimeout(function () {
+                        document.body.style.opacity = "0";
+                        setTimeout(function () { window.location.href = href; }, 620);
+                    }, 150);
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
