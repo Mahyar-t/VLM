@@ -94,3 +94,18 @@ python run_qwen_cli.py /path/to/image.jpg --prompt "Extract all the text present
 ```bash
 python run_qwen_cli.py /path/to/image.jpg --max_tokens 128
 ```
+
+## Reset the Cached Models (Web UI)
+
+The **"Reset the cached models"** button on the Image Captioning page is used to free up GPU Memory (VRAM). 
+
+VisionBox supports large multimodal models (such as Qwen2.5-VL and BLIP) which are kept cached in VRAM after being loaded to ensure fast subsequent generations. However, loading multiple large models can lead to Out of Memory (OOM) errors on systems with limited GPU memory. 
+
+Clicking this button sends a request from the web interface to the backend server to entirely unload all cached models, perform garbage collection, and explicitly clear the CUDA cache (`torch.cuda.empty_cache()`). This fully releases the VRAM back to the system, allowing you to load different models from scratch without memory crashes.
+
+**How VRAM Monitoring Works:**
+The web interface features a real-time VRAM usage indicator. This works via a polling mechanism:
+1. Every 5 seconds, the frontend (`caption.html`) hits the `/api/gpu-stats` endpoint on the Java Spring Boot backend.
+2. The Java backend relays this fetch to the Python FastAPI backend, which relies on `torch.cuda.memory_allocated()` to report exactly how much VRAM is currently held by loaded model weights and PyTorch tensors.
+3. The UI updates the usage pill based on this data (showing the allocated VRAM vs the GPU's total VRAM).
+4. When you click **"Reset the cached models"**, the VRAM is cleared as explained above. On the very next 5-second polling tick, the `torch.cuda.memory_allocated()` call accurately reads near 0 MB (or significantly less) since memory was released, turning the UI indicator green to confirm to the user that the GPU is ready for the next model.
