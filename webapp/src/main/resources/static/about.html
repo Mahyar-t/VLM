@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionBox - About</title>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scrollbar-gutter: stable;
+        }
+
+        :root {
+            --bg: #DAE4E8;
+            --primary: #5FD1D4;
+            --secondary: #82D2D5;
+            --dark: #1C3342;
+            --white: #FFFFFF;
+            --sidebar-width: 280px;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: var(--dark);
+            background-image:
+                radial-gradient(ellipse at center, rgba(10, 25, 38, 0) 0%, rgba(10, 25, 38, 0.82) 100%),
+                linear-gradient(rgba(28, 51, 66, 0.25), rgba(28, 51, 66, 0.25)),
+                url('hero-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: 400;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: calc(-1 * var(--sidebar-width));
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: rgba(28, 51, 66, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: var(--white);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            padding: 2rem 2rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar.active {
+            transform: translateX(var(--sidebar-width));
+        }
+
+        .sidebar-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 6.5rem;
+            margin-bottom: 1.2rem;
+            gap: 1rem;
+        }
+
+        .sidebar-header img {
+            height: 100px;
+            filter: drop-shadow(0 0 15px rgba(95, 209, 212, 0.4));
+        }
+
+        .sidebar-header a {
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header a:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar-link {
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-link:hover {
+            color: var(--white);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .sidebar-link.active {
+            color: var(--primary);
+            background: rgba(95, 209, 212, 0.15);
+            border-left: 3px solid var(--primary);
+        }
+
+        /* ── Hamburger ── */
+        .menu-btn {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-btn span {
+            width: 24px;
+            height: 2px;
+            background: var(--white);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .menu-btn.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .menu-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-btn.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            position: fixed;
+            top: 40px;
+            left: 110px;
+            height: 50px;
+            width: fit-content;
+            z-index: 10;
+            animation: fadeIn 1s ease-out;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 0 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .top-bar.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-15px);
+        }
+
+        .top-bar-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .top-bar-brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            color: #FFFFFF;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+            line-height: 1;
+        }
+
+        .top-bar-brand h1 a {
+            text-decoration: none;
+            color: inherit;
+            transition: opacity 0.3s;
+        }
+
+        .top-bar-brand h1 a:hover {
+            opacity: 0.8;
+        }
+
+        .top-bar-brand p {
+            font-size: 0.75rem;
+            color: var(--white);
+            opacity: 0.9;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1;
+            padding-right: 15px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .top-nav {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .top-nav a {
+            color: var(--white) !important;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: color 0.3s, transform 0.3s;
+            opacity: 0.8;
+        }
+
+        .top-nav a:hover {
+            color: var(--primary) !important;
+            transform: translateY(-2px);
+            opacity: 1;
+        }
+
+        /* ── Overlay ── */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(28, 51, 66, 0.2);
+            backdrop-filter: blur(4px);
+            visibility: hidden;
+            transition: all 0.4s;
+            z-index: 999;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ── Main wrapper ── */
+        .main-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-top: 7.5rem;
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        /* ── About content ── */
+        .about-container {
+            max-width: 1100px;
+            width: 100%;
+            padding: 0 4rem 6rem;
+        }
+
+        .about-heading {
+            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+            font-weight: 900;
+            letter-spacing: -2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            line-height: 1;
+        }
+
+        .about-heading .accent {
+            color: var(--primary);
+            filter: drop-shadow(0 0 20px rgba(95, 209, 212, 0.35));
+        }
+
+        .about-card {
+            background: rgba(28, 51, 66, 0.9);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: var(--radius);
+            padding: 3rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .about-body {
+            font-size: 1.1rem;
+            line-height: 1.85;
+            color: rgba(255, 255, 255, 0.72);
+            font-weight: 300;
+        }
+
+        .about-body .highlight {
+            color: var(--white);
+            font-weight: 500;
+        }
+
+        .about-body .highlight-accent {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Profile photo */
+        .profile-photo {
+            float: right;
+            margin: 0 0 2rem 2.5rem;
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .profile-photo:hover {
+            transform: scale(1.04);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(95, 209, 212, 0.15);
+        }
+
+        /* Divider */
+        .divider {
+            width: 5rem;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            border-radius: 99px;
+            margin: 2.5rem 0;
+        }
+
+        /* ── Social buttons ── */
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2.5rem;
+        }
+
+        .social-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 99px;
+            color: var(--white);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .social-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+
+        .social-btn.linkedin:hover {
+            background: #0077b5;
+            border-color: transparent;
+        }
+
+        .social-btn.github:hover {
+            background: #333;
+            border-color: transparent;
+        }
+
+        .social-btn.contact:hover {
+            background: var(--primary);
+            border-color: transparent;
+            color: var(--dark);
+        }
+
+        .social-btn.contact svg {
+            fill: none;
+            stroke: currentColor;
+        }
+
+        /* ── Paragraph spacing ── */
+        .about-body p+p {
+            margin-top: 1.5rem;
+        }
+
+        .about-body p:first-child {
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <button class="menu-btn" id="menuBtn"><span></span><span></span><span></span></button>
+    <div class="overlay" id="overlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><a href="/"><img src="/logo.png" alt="VisionBox Logo"></a></div>
+        <nav class="sidebar-nav">
+            <a href="/" class="sidebar-link">Dashboard</a>
+            <a href="/inference.html" class="sidebar-link">Inference &amp; Fine-Tuning</a>
+            <a href="/vqa.html" class="sidebar-link">Visual Question Answering</a>
+            <a href="/caption.html" class="sidebar-link">Image Captioning</a>
+        </nav>
+        <div style="margin-top:auto;"><a href="https://github.com/Mahyar-t/VLM" target="_blank"
+                class="sidebar-link">GitHub Repo</a></div>
+    </aside>
+
+    <header class="top-bar">
+        <div class="top-bar-brand">
+            <h1><a href="/">VisionBox</a></h1>
+            <p>Computer Vision Toolkit</p>
+        </div>
+        <nav class="top-nav">
+            <a href="/about.html" style="color: var(--primary) !important; opacity: 1;">About</a>
+            <a href="/contact.html">Contact</a>
+        </nav>
+    </header>
+
+    <div class="main-wrapper">
+        <div class="about-container">
+
+            <h1 class="about-heading">About <span class="accent">Me</span></h1>
+
+            <div class="about-card">
+                <div class="about-body">
+                    <div>
+                        <img src="/mahyar.jpg" alt="Mahyar Taherpour" class="profile-photo"
+                            onerror="this.style.display='none'">
+                        <p>
+                            I'm <span class="highlight">Mahyar Taherpour (PhD)</span>, a scientific software and
+                            machine-learning engineer.
+                            My work sits where physics, simulation, and production-quality software meet. I build tools
+                            that
+                            help
+                            researchers and engineers turn ideas into models, and models into results they can trust.
+                        </p>
+                    </div>
+
+                    <p>
+                        I earned my PhD in Applied Computational Physics at Eindhoven University of Technology, where my
+                        research
+                        focused on accurate and fast modeling of opto-electronic processes and advanced simulation
+                        methods.
+                        Before that,
+                        I completed an M.Sc. in Solid-State Physics at the University of Tehran, working on charge
+                        transport
+                        modeling
+                        in solar-cell materials.
+                    </p>
+
+                    <div class="divider"></div>
+
+                    <p>
+                        Over the past years, I've worked on high-performance simulation software and ML-driven
+                        engineering
+                        systems,
+                        using tools like Python and C++, numerical solvers, and scalable computing. I also apply
+                        practical
+                        software
+                        engineering practices — including testing, clean architecture, and CI/CD — so the final product
+                        is
+                        not just
+                        a demo, but something people can actually use.
+                    </p>
+
+                    <p>
+                        This website is built around that same goal: a web-based simulation tool that makes it easier to
+                        explore
+                        designs, test assumptions, and learn faster without needing heavy setup or long trial-and-error
+                        cycles
+                        for scientific users.
+                    </p>
+
+                    <p class="highlight-accent">
+                        If you'd like to collaborate, give feedback, or discuss use-cases, feel free to reach out via my
+                        LinkedIn, GitHub, or contact page.
+                    </p>
+
+                    <div class="social-links">
+                        <a href="https://www.linkedin.com/in/mahyartaherpour/" target="_blank" rel="noopener noreferrer"
+                            class="social-btn linkedin">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                            </svg>
+                            LinkedIn
+                        </a>
+
+                        <a href="https://github.com/Mahyar-t" target="_blank" rel="noopener noreferrer"
+                            class="social-btn github">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                            </svg>
+                            GitHub
+                        </a>
+
+                        <a href="/contact.html" class="social-btn contact">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Contact Me
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <script>
+            const menuBtn = document.getElementById('menuBtn');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            function toggleSidebar() { menuBtn.classList.toggle('active'); sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
+            menuBtn.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+
+            // Scroll-to-hide top bar
+            (function () {
+                var lastScroll = 0;
+                var topBar = document.querySelector('.top-bar');
+                window.addEventListener('scroll', function () {
+                    var current = window.scrollY || document.documentElement.scrollTop;
+                    if (current > lastScroll && current > 80) {
+                        topBar.classList.add('hidden');
+                    } else {
+                        topBar.classList.remove('hidden');
+                    }
+                    lastScroll = current <= 0 ? 0 : current;
+                }, { passive: true });
+            })();
+        </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                requestAnimationFrame(function () { document.body.style.opacity = "1"; });
+            });
+            document.querySelectorAll("a.sidebar-link, .sidebar-header a, .top-nav a").forEach(function (link) {
+                link.addEventListener("click", function (e) {
+                    var href = link.getAttribute("href");
+                    if (href && href !== window.location.pathname && !href.startsWith("#")) {
+                        e.preventDefault();
+                        var sidebar = document.getElementById("sidebar");
+                        var overlay = document.getElementById("overlay");
+                        var menuBtn = document.getElementById("menuBtn");
+                        if (sidebar) { sidebar.classList.remove("active"); }
+                        if (overlay) { overlay.classList.remove("active"); }
+                        if (menuBtn) { menuBtn.classList.remove("active"); }
+                        setTimeout(function () {
+                            document.body.style.opacity = "0";
+                            setTimeout(function () { window.location.href = href; }, 620);
+                        }, 150);
+                    }
+                });
+            });
+        </script>
+</body>
+
+</html>
