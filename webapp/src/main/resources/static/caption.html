@@ -676,11 +676,18 @@
                             <input type="hidden" id="llmModelValue" value="local::Qwen2.5-VL-3B">
                             <div
                                 style="margin-bottom: 2rem; padding: 1rem; background: rgba(95, 209, 212, 0.1); border: 1px solid var(--primary); border-radius: 8px;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                                     <h3 style="color: var(--primary); font-size: 1.1rem; margin: 0;">Qwen2.5-VL 3B</h3>
+                                    <select id="llmPrecisionSelect" name="precision"
+                                        style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--primary);">
+                                        <option value="4" selected>4-bit (Fastest, ~1.5GB VRAM)</option>
+                                        <option value="8">8-bit (Balanced, ~3.1GB VRAM)</option>
+                                        <option value="16">16-bit (High VRAM, ~6.1GB VRAM)</option>
+                                    </select>
                                 </div>
                                 <p style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin: 0;">Running locally
-                                    in 4-bit precision.</p>
+                                    with dynamic precision.</p>
                             </div>
                             <!-- 
                             <label style="margin-bottom:1rem; display:block;">Max Image Resolution
@@ -1095,6 +1102,8 @@
                         const maxPix = sel.value;
                         formData.set('maxPixels', maxPix);
                     }
+                } else {
+                    formData.delete('precision');
                 }
 
                 // Remove the unneeded fields

@@ -69,28 +69,42 @@ def clear_other_models(key_to_keep: str):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-def load_qwen_caption_model(device: str):
-    key = f"caption_{QWEN_LOCAL_ID}_{device}"
+def load_qwen_caption_model(device: str, precision: str = "4"):
+    key = f"caption_{QWEN_LOCAL_ID}_{device}_{precision}"
     state_key = f"{QWEN_LOCAL_ID}::{device}"
     if key not in models:
         clear_other_models(key)
-        print(f"Loading Qwen2.5-VL-3B (4-bit) from {QWEN_LOCAL_PATH} ...")
+        print(f"Loading Qwen2.5-VL-3B ({precision}-bit) from {QWEN_LOCAL_PATH} ...")
         from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
-        quant_cfg = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4",
-        )
+        
+        quant_cfg = None
+        if precision == "4":
+            quant_cfg = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type="nf4",
+            )
+        elif precision == "8":
+            quant_cfg = BitsAndBytesConfig(load_in_8bit=True)
+
         loading_states[state_key] = "loading_processor"
         processor = AutoProcessor.from_pretrained(QWEN_LOCAL_PATH, local_files_only=True)
         loading_states[state_key] = "loading_model"
+        
+        model_kwargs = {
+            "device_map": "auto",
+            "attn_implementation": "sdpa",
+            "local_files_only": True,
+        }
+        if quant_cfg:
+            model_kwargs["quantization_config"] = quant_cfg
+        else:
+            model_kwargs["torch_dtype"] = torch.float16
+            
         model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             QWEN_LOCAL_PATH,
-            quantization_config=quant_cfg,
-            device_map="auto",
-            attn_implementation="sdpa",
-            local_files_only=True,
+            **model_kwargs
         )
         model.eval()
         models[key] = (processor, model)
@@ -168,6 +182,7 @@ class CaptionRequest(BaseModel):
     model_name: str = "Salesforce/blip-image-captioning-large"
     device: str = "cuda"
     max_pixels: Optional[int] = None
+    precision: str = "4"
 
 class VQARequest(BaseModel):
     image_base64: str
@@ -185,6 +200,7 @@ class PreloadRequest(BaseModel):
     model_name: str
     task: str = "caption"
     device: str = "cuda"
+    precision: str = "4"
 
 @app.post("/api/preload")
 async def preload_model(req: PreloadRequest):
@@ -194,7 +210,7 @@ async def preload_model(req: PreloadRequest):
         if req.task == "vqa":
             await asyncio.to_thread(load_vqa_model, req.model_name, req.device)
         elif _is_qwen(req.model_name):
-            await asyncio.to_thread(load_qwen_caption_model, req.device)
+            await asyncio.to_thread(load_qwen_caption_model, req.device, req.precision)
         else:
             await asyncio.to_thread(load_caption_model, req.model_name, req.device)
         return {"status": "ok", "message": f"Successfully loaded {req.model_name} to {req.device}"}
@@ -275,7 +291,7 @@ async def generate_caption(req: CaptionRequest):
 
         if _is_qwen(req.model_name):
             # ── Qwen2.5-VL path ──
-            processor, model = await asyncio.to_thread(load_qwen_caption_model, req.device)
+            processor, model = await asyncio.to_thread(load_qwen_caption_model, req.device, req.precision)
             prompt_text = req.condition if req.condition else "Describe this image in detail."
             image_content = {"type": "image", "image": img}
             if req.max_pixels is not None:

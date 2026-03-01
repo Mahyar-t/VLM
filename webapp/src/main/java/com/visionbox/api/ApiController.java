@@ -128,7 +128,8 @@ public class ApiController {
             @RequestParam(value = "condition", required = false) String condition,
             @RequestParam(value = "model", required = false, defaultValue = "Salesforce/blip-image-captioning-large") String model,
             @RequestParam(value = "device", required = false, defaultValue = "cuda") String device,
-            @RequestParam(value = "maxPixels", required = false) Integer maxPixels) {
+            @RequestParam(value = "maxPixels", required = false) Integer maxPixels,
+            @RequestParam(value = "precision", required = false, defaultValue = "4") String precision) {
         try {
             // Save the uploaded image to a temp file
             String originalName = image.getOriginalFilename();
@@ -143,7 +144,8 @@ public class ApiController {
                     condition,
                     model,
                     device,
-                    maxPixels);
+                    maxPixels,
+                    precision);
 
             // Clean up
             Files.deleteIfExists(tempImage);
@@ -191,13 +193,14 @@ public class ApiController {
     public ResponseEntity<Map<String, Object>> preloadModel(
             @RequestParam("model") String model,
             @RequestParam(value = "task", required = false, defaultValue = "caption") String task,
-            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device) {
+            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device,
+            @RequestParam(value = "precision", required = false, defaultValue = "4") String precision) {
         // Fire-and-forget: launch preload in a background thread and return
         // immediately. The frontend polls /api/preload-status for progress.
-        final String m = model, t = task, d = device;
+        final String m = model, t = task, d = device, p = precision;
         new Thread(() -> {
             try {
-                bridge.preload(m, t, d);
+                bridge.preload(m, t, d, p);
             } catch (Exception e) {
                 System.err.println("Background preload failed: " + e.getMessage());
             }

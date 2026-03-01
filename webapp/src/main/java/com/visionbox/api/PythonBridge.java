@@ -227,7 +227,8 @@ public class PythonBridge {
 
     // ── caption ──────────────────────────────────────────────────────────────
 
-    public String caption(String imagePath, String condition, String model, String device, Integer maxPixels)
+    public String caption(String imagePath, String condition, String model, String device, Integer maxPixels,
+            String precision)
             throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("image_base64", encodeImageFile(imagePath));
@@ -242,6 +243,9 @@ public class PythonBridge {
         }
         if (maxPixels != null) {
             payload.put("max_pixels", maxPixels);
+        }
+        if (precision != null && !precision.isBlank()) {
+            payload.put("precision", precision);
         }
 
         String jsonBytes = mapper.writeValueAsString(payload);
@@ -297,7 +301,7 @@ public class PythonBridge {
 
     // ── preload ──────────────────────────────────────────────────────────────
 
-    public void preload(String model, String task, String device) throws Exception {
+    public void preload(String model, String task, String device, String precision) throws Exception {
         Map<String, String> payload = new HashMap<>();
         if (model != null && !model.isBlank()) {
             payload.put("model_name", model);
@@ -307,6 +311,9 @@ public class PythonBridge {
         }
         if (device != null && !device.isBlank()) {
             payload.put("device", device);
+        }
+        if (precision != null && !precision.isBlank()) {
+            payload.put("precision", precision);
         }
 
         String jsonBytes = mapper.writeValueAsString(payload);
