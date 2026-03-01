@@ -688,6 +688,18 @@
                                 <p style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin: 0;">Running locally
                                     in 4-bit precision.</p>
                             </div>
+                            <!-- 
+                            <label style="margin-bottom:1rem; display:block;">Max Image Resolution
+                                <select id="llmResolutionSelect" name="maxPixels"
+                                    style="padding: 0.4rem 0.6rem; font-size: 0.9rem; width: fit-content; border-radius: 6px;">
+                                    <option value="921600">720p (Fastest)</option>
+                                    <option value="2073600">1080p (Balanced)</option>
+                                    <option value="3686400" selected>1440p / 2K (Recommended)</option>
+                                    <option value="8294400">4K (High Detail, Slower)</option>
+                                    <option value="33177600">8K (Maximum Detail, Very Slow)</option>
+                                </select>
+                            </label>
+                            -->
                             <label>Prompt / Instructions
                                 <textarea name="condition_llm" id="conditionInputLlm"
                                     placeholder="e.g. Describe this image in detail. Extract any text visible."></textarea>
@@ -1095,6 +1107,14 @@
                     formData.set('condition', conditionValue);
                 } else {
                     formData.delete('condition');
+                }
+
+                if (activeTab === 'llm') {
+                    const sel = document.getElementById('llmResolutionSelect');
+                    if (sel) {
+                        const maxPix = sel.value;
+                        formData.set('maxPixels', maxPix);
+                    }
                 }
 
                 // Remove the unneeded fields

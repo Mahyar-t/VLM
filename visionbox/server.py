@@ -167,6 +167,7 @@ class CaptionRequest(BaseModel):
     condition: Optional[str] = None
     model_name: str = "Salesforce/blip-image-captioning-large"
     device: str = "cuda"
+    max_pixels: Optional[int] = None
 
 class VQARequest(BaseModel):
     image_base64: str
@@ -276,10 +277,14 @@ async def generate_caption(req: CaptionRequest):
             # ── Qwen2.5-VL path ──
             processor, model = await asyncio.to_thread(load_qwen_caption_model, req.device)
             prompt_text = req.condition if req.condition else "Describe this image in detail."
+            image_content = {"type": "image", "image": img}
+            if req.max_pixels is not None:
+                image_content["max_pixels"] = req.max_pixels
+                
             messages = [{
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": img},
+                    image_content,
                     {"type": "text",  "text": prompt_text},
                 ],
             }]

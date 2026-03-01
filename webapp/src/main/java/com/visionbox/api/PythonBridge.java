@@ -227,8 +227,9 @@ public class PythonBridge {
 
     // ── caption ──────────────────────────────────────────────────────────────
 
-    public String caption(String imagePath, String condition, String model, String device) throws Exception {
-        Map<String, String> payload = new HashMap<>();
+    public String caption(String imagePath, String condition, String model, String device, Integer maxPixels)
+            throws Exception {
+        Map<String, Object> payload = new HashMap<>();
         payload.put("image_base64", encodeImageFile(imagePath));
         if (condition != null && !condition.isBlank()) {
             payload.put("condition", condition);
@@ -238,6 +239,9 @@ public class PythonBridge {
         }
         if (device != null && !device.isBlank()) {
             payload.put("device", device);
+        }
+        if (maxPixels != null) {
+            payload.put("max_pixels", maxPixels);
         }
 
         String jsonBytes = mapper.writeValueAsString(payload);

@@ -127,7 +127,8 @@ public class ApiController {
             @RequestParam("image") MultipartFile image,
             @RequestParam(value = "condition", required = false) String condition,
             @RequestParam(value = "model", required = false, defaultValue = "Salesforce/blip-image-captioning-large") String model,
-            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device) {
+            @RequestParam(value = "device", required = false, defaultValue = "cuda") String device,
+            @RequestParam(value = "maxPixels", required = false) Integer maxPixels) {
         try {
             // Save the uploaded image to a temp file
             String originalName = image.getOriginalFilename();
@@ -141,7 +142,8 @@ public class ApiController {
                     tempImage.toAbsolutePath().toString(),
                     condition,
                     model,
-                    device);
+                    device,
+                    maxPixels);
 
             // Clean up
             Files.deleteIfExists(tempImage);
