@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisionBox API - Inference</title>
+    <title>VisionBox API - Inference &amp; Fine-Tuning</title>
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -109,12 +109,6 @@
             filter: drop-shadow(0 0 15px rgba(95, 209, 212, 0.4));
         }
 
-        .sidebar-header h2 {
-            font-size: 1.2rem;
-            font-weight: 500;
-            letter-spacing: 1px;
-        }
-
         .sidebar-header a {
             transition: transform 0.3s ease;
         }
@@ -193,7 +187,9 @@
             transform: translateY(8px) rotate(45deg);
         }
 
-        .menu-btn.active span:nth-child(2) {}
+        .menu-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
 
         .menu-btn.active span:nth-child(3) {
             transform: translateY(-8px) rotate(-45deg);
@@ -291,46 +287,58 @@
         }
 
         /* -- Main Content -- */
-        header {
-            width: 100%;
-            padding: 7.5rem 4rem 2rem 110px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 1.2rem;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: -1px;
-            text-transform: uppercase;
-            color: var(--white);
-            text-shadow: 0 0 15px rgba(95, 209, 212, 0.3);
-        }
-
-        header h1 a {
-            text-decoration: none;
-            color: inherit;
-            transition: opacity 0.3s;
-        }
-
-        header h1 a:hover {
-            opacity: 0.8;
-        }
-
         .container {
             max-width: 1400px;
             width: 100%;
             padding: 0 4rem 4rem;
             z-index: 10;
+        }
+
+        /* -- Tab Bar -- */
+        .tab-bar {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: var(--radius);
+            padding: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: fit-content;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.55);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 0.7rem 1.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--white);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .tab-btn.active {
+            background: rgba(95, 209, 212, 0.18);
+            color: var(--primary);
+            box-shadow: 0 2px 10px rgba(95, 209, 212, 0.15);
+        }
+
+        /* -- Tab Panels -- */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
         }
 
         .card {
@@ -408,6 +416,10 @@
             margin-bottom: 2.5rem;
         }
 
+        .form-grid.full {
+            grid-template-columns: 1fr;
+        }
+
         .form-grid label {
             font-size: 0.75rem;
             font-weight: 700;
@@ -470,16 +482,17 @@
             color: var(--dark);
         }
 
-        .results {
+        /* Inference results */
+        .results-inference {
             margin-top: 3rem;
         }
 
-        .results table {
+        .results-inference table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .results th {
+        .results-inference th {
             text-align: left;
             padding: 1rem;
             font-size: 0.75rem;
@@ -490,7 +503,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .results td {
+        .results-inference td {
             padding: 1.2rem 1rem;
             font-size: 1rem;
             font-weight: 500;
@@ -528,6 +541,24 @@
             color: var(--primary);
         }
 
+        /* Fine-Tuning results */
+        .results-ft {
+            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: 'monospace';
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--white);
+        }
+
+        .results-ft.visible {
+            display: block;
+        }
+
         .spinner {
             display: inline-block;
             width: 18px;
@@ -553,6 +584,25 @@
                 opacity: 1;
             }
         }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(28, 51, 66, 0.2);
+            backdrop-filter: blur(4px);
+            visibility: hidden;
+            transition: all 0.4s;
+            z-index: 999;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
 
@@ -564,14 +614,14 @@
         <div class="sidebar-header"><a href="/"><img src="/logo.png" alt="Logo"></a></div>
         <nav class="sidebar-nav">
             <a href="/" class="sidebar-link">Dashboard</a>
-            <a href="/inference.html" class="sidebar-link active">Inference Engine</a>
-            <a href="/fine-tuning.html" class="sidebar-link">Fine-Tuning System</a>
+            <a href="/inference.html" class="sidebar-link active">Inference &amp; Fine-Tuning</a>
             <a href="/vqa.html" class="sidebar-link">Visual Question Answering</a>
             <a href="/caption.html" class="sidebar-link">Image Captioning</a>
         </nav>
         <div style="margin-top:auto;"><a href="https://github.com/Mahyar-t/VLM" target="_blank"
                 class="sidebar-link">GitHub Repo</a></div>
     </aside>
+
     <header class="top-bar">
         <div class="top-bar-brand">
             <h1><a href="/">VisionBox</a></h1>
@@ -583,83 +633,131 @@
         </nav>
     </header>
 
-
     <div class="main-wrapper">
-
-
-
         <div class="container">
-            <div class="card">
-                <h2>Inference Engine</h2>
-                <form id="predictForm">
-                    <div class="drop-zone" id="dropZone">
-                        <p>Drag & drop or click to upload</p>
-                        <div class="preview-container" id="previewContainer">
-                            <img id="previewImage" src="" alt="Preview">
-                            <button type="button"
-                                style="position:absolute;top:15px;right:15px;background:var(--dark);color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;"
-                                id="removePhotoBtn">REMOVE</button>
-                        </div>
-                    </div>
-                    <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
 
-                    <div class="form-grid">
-                        <label>Architecture
-                            <select name="model">
-                                <option value="resnet18">ResNet18</option>
-                                <option value="resnet50">ResNet50</option>
-                                <option value="densenet121">DenseNet-121</option>
-                                <option value="mobilenet_v3_small">MobileNet v3 (Small)</option>
-                                <option value="mobilenet_v3_large">MobileNet v3 (Large)</option>
-                                <option value="clip-vit-base-patch32">CLIP (Zero-Shot)</option>
-                            </select>
-                        </label>
-                        <label>Device
-                            <select name="device">
-                                <option value="cpu">CPU</option>
-                                <option value="cuda" selected>CUDA</option>
-                            </select>
-                        </label>
-                        <label>Number of Top Predictions
-                            <input type="number" name="topk" id="topkInput" value="3" min="1" max="10">
-                        </label>
-                        <hr
-                            style="grid-column: 1 / -1; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 1rem 0;">
-                        <label>Custom Weights (optional)
-                            <input type="text" name="weights" placeholder="/path/to/best.pt">
-                        </label>
-                        <label>Class Map (optional)
-                            <input type="text" name="class_map" placeholder="/path/to/class_to_idx.json">
-                        </label>
-                        <label id="zeroShotLabel" style="display:none; grid-column: 1 / -1;">Zero-Shot Classes
-                            (comma-separated, for CLIP)
-                            <input type="text" name="candidate_classes" placeholder="e.g. cat, dog, bird, car">
-                        </label>
-                    </div>
-
-                    <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 2rem 0;">
-
-                    <div class="results">
-                        <h3 style="font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--white);
-            transition: opacity 0.5s ease; margin-bottom: 1.5rem;">
-                            Results</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Class</th>
-                                    <th>Probability</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsBody"></tbody>
-                        </table>
-                    </div>
-
-                    <button class="btn" type="submit" id="submitBtn">Classify Image</button>
-                </form>
+            <!-- Tab Bar -->
+            <div class="tab-bar">
+                <button class="tab-btn active" id="tab-inference" onclick="switchTab('inference')">Inference
+                    Engine</button>
+                <button class="tab-btn" id="tab-finetuning" onclick="switchTab('finetuning')">Fine-Tuning
+                    System</button>
             </div>
+
+            <!-- ─── Tab: Inference Engine ─── -->
+            <div class="tab-panel active" id="panel-inference">
+                <div class="card">
+                    <h2>Inference Engine</h2>
+                    <form id="predictForm">
+                        <div class="drop-zone" id="dropZone">
+                            <p>Drag &amp; drop or click to upload</p>
+                            <div class="preview-container" id="previewContainer">
+                                <img id="previewImage" src="" alt="Preview">
+                                <button type="button"
+                                    style="position:absolute;top:15px;right:15px;background:var(--dark);color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;"
+                                    id="removePhotoBtn">REMOVE</button>
+                            </div>
+                        </div>
+                        <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
+
+                        <div class="form-grid">
+                            <label>Architecture
+                                <select name="model">
+                                    <option value="resnet18">ResNet18</option>
+                                    <option value="resnet50">ResNet50</option>
+                                    <option value="densenet121">DenseNet-121</option>
+                                    <option value="mobilenet_v3_small">MobileNet v3 (Small)</option>
+                                    <option value="mobilenet_v3_large">MobileNet v3 (Large)</option>
+                                    <option value="clip-vit-base-patch32">CLIP (Zero-Shot)</option>
+                                </select>
+                            </label>
+                            <label>Device
+                                <select name="device">
+                                    <option value="cpu">CPU</option>
+                                    <option value="cuda" selected>CUDA</option>
+                                </select>
+                            </label>
+                            <label>Number of Top Predictions
+                                <input type="number" name="topk" id="topkInput" value="3" min="1" max="10">
+                            </label>
+                            <hr
+                                style="grid-column: 1 / -1; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 1rem 0;">
+                            <label>Custom Weights (optional)
+                                <input type="text" name="weights" placeholder="/path/to/best.pt">
+                            </label>
+                            <label>Class Map (optional)
+                                <input type="text" name="class_map" placeholder="/path/to/class_to_idx.json">
+                            </label>
+                            <label id="zeroShotLabel" style="display:none; grid-column: 1 / -1;">Zero-Shot Classes
+                                (comma-separated, for CLIP)
+                                <input type="text" name="candidate_classes" placeholder="e.g. cat, dog, bird, car">
+                            </label>
+                        </div>
+
+                        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 2rem 0;">
+
+                        <div class="results-inference">
+                            <h3 style="font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--white);
+            transition: opacity 0.5s ease; margin-bottom: 1.5rem;">
+                                Results</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Class</th>
+                                        <th>Probability</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsBody"></tbody>
+                            </table>
+                        </div>
+
+                        <button class="btn" type="submit" id="submitBtn">Classify Image</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ─── Tab: Fine-Tuning System ─── -->
+            <div class="tab-panel" id="panel-finetuning">
+                <div class="card">
+                    <h2>Fine-Tuning System</h2>
+                    <form id="trainForm">
+                        <div class="form-grid full"><label>Dataset Directory (Absolute Path)<input type="text"
+                                    name="data_dir" placeholder="/home/user/dataset" required></label></div>
+                        <div class="form-grid">
+                            <label>Backbone Architecture
+                                <select name="model">
+                                    <option value="mobilenet_v3_small">MobileNet v3 (Small)</option>
+                                    <option value="mobilenet_v3_large">MobileNet v3 (Large)</option>
+                                    <option value="resnet18">ResNet18</option>
+                                    <option value="resnet50">ResNet50</option>
+                                </select>
+                            </label>
+                            <label>Device<select name="device">
+                                    <option value="cpu">CPU</option>
+                                    <option value="cuda" selected>CUDA</option>
+                                </select></label>
+                            <label>Epochs<input type="number" name="epochs" value="10"></label>
+                            <label>Batch Size<input type="number" name="batch_size" value="32"></label>
+                            <label>Learning Rate<input type="number" step="0.0001" name="lr" value="0.0001"></label>
+                        </div>
+                        <button class="btn" type="submit" id="trainSubmitBtn">Start Training Job</button>
+                    </form>
+                    <div class="results-ft" id="trainResultsBox"></div>
+                </div>
+            </div>
+
         </div>
 
         <script>
+            // ── Tab switching ──
+            function switchTab(tab) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                document.getElementById('tab-' + tab).classList.add('active');
+                document.getElementById('panel-' + tab).classList.add('active');
+            }
+
+            // ── Sidebar ──
             const menuBtn = document.getElementById('menuBtn');
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
@@ -667,7 +765,7 @@
             menuBtn.addEventListener('click', toggleSidebar);
             overlay.addEventListener('click', toggleSidebar);
 
-            // Scroll-to-hide top bar
+            // ── Scroll-to-hide top bar ──
             (function () {
                 var lastScroll = 0;
                 var topBar = document.querySelector('.top-bar');
@@ -682,6 +780,7 @@
                 }, { passive: true });
             })();
 
+            // ── Inference Engine logic ──
             const fileInput = document.getElementById('imageInput');
             const dropZone = document.getElementById('dropZone');
             const previewContainer = document.getElementById('previewContainer');
@@ -692,7 +791,6 @@
             const resultsBody = document.getElementById('resultsBody');
             const topkInput = document.getElementById('topkInput');
 
-            // Toggle Zero-Shot Classes input visibility
             const modelSelect = document.querySelector('select[name="model"]');
             const zeroShotLabel = document.getElementById('zeroShotLabel');
             modelSelect.addEventListener('change', () => {
@@ -704,7 +802,6 @@
                 }
             });
 
-            // -- Placeholder Logic --
             function updatePlaceholders() {
                 const count = parseInt(topkInput.value) || 3;
                 resultsBody.innerHTML = '';
@@ -739,7 +836,6 @@
                 e.preventDefault();
                 if (!fileInput.files.length) return alert('Select image');
 
-                // Show loading skeletons
                 const count = parseInt(topkInput.value) || 3;
                 resultsBody.innerHTML = '';
                 for (let i = 0; i < count; i++) {
@@ -777,19 +873,42 @@
                 }
                 finally { submitBtn.innerHTML = 'Classify Image'; submitBtn.disabled = false; }
             };
+
+            // ── Fine-Tuning logic ──
+            const trainForm = document.getElementById('trainForm');
+            const trainSubmitBtn = document.getElementById('trainSubmitBtn');
+            const trainResultsBox = document.getElementById('trainResultsBox');
+            trainForm.onsubmit = async (e) => {
+                e.preventDefault();
+                trainSubmitBtn.innerHTML = '<span class="spinner"></span> Training...';
+                trainSubmitBtn.disabled = true;
+                try {
+                    const formData = new FormData(trainForm);
+                    const payload = Object.fromEntries(formData.entries());
+                    payload.epochs = parseInt(payload.epochs);
+                    payload.batch_size = parseInt(payload.batch_size);
+                    payload.lr = parseFloat(payload.lr);
+                    const res = await fetch('/api/train', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const json = await res.json();
+                    if (json.status === 'ok') {
+                        trainResultsBox.textContent = "=== Job Finished ===\n\n" + json.output;
+                        trainResultsBox.classList.add('visible');
+                    } else alert(json.message);
+                } catch (err) { alert(err.message); }
+                finally { trainSubmitBtn.innerHTML = 'Start Training Job'; trainSubmitBtn.disabled = false; }
+            };
         </script>
         <script>
             // Page fade-in on load
             document.addEventListener("DOMContentLoaded", function () {
                 requestAnimationFrame(function () { document.body.style.opacity = "1"; });
             });
-            // Fade-out only for sidebar navigation links (not the menu toggle or form links)
+            // Fade-out for navigation links
             document.querySelectorAll("a.sidebar-link, .sidebar-header a, .top-nav a").forEach(function (link) {
                 link.addEventListener("click", function (e) {
                     var href = link.getAttribute("href");
                     if (href && href !== window.location.pathname && !href.startsWith("#")) {
                         e.preventDefault();
-                        // Close sidebar first, then fade and navigate
                         var sidebar = document.getElementById("sidebar");
                         var overlay = document.getElementById("overlay");
                         var menuBtn = document.getElementById("menuBtn");
@@ -804,6 +923,7 @@
                 });
             });
         </script>
+    </div>
 </body>
 
 </html>
