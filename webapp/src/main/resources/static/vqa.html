@@ -33,12 +33,13 @@
             font-family: 'Rubik', sans-serif;
             background-color: var(--dark);
             background-image:
-                radial-gradient(ellipse at center, rgba(10, 25, 38, 0) 0%, rgba(10, 25, 38, 0.82) 100%),
+                radial-gradient(ellipse at center, rgba(10, 25, 38, 0) 0%, rgba(10, 25, 38, 0.3) 100%),
                 linear-gradient(rgba(28, 51, 66, 0.25), rgba(28, 51, 66, 0.25)),
                 url('hero-bg.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            background-repeat: no-repeat;
             color: var(--white);
             min-height: 100vh;
             display: flex;
@@ -525,7 +526,7 @@
         <div class="sidebar-header"><a href="/"><img src="/logo.png" alt="Logo"></a></div>
         <nav class="sidebar-nav">
             <a href="/" class="sidebar-link">Dashboard</a>
-            <a href="/inference.html" class="sidebar-link">Inference &amp; Fine-Tuning</a>
+            <a href="/inference.html" class="sidebar-link">Image Classifiers</a>
             <a href="/vqa.html" class="sidebar-link active">Visual Question Answering</a>
             <a href="/caption.html" class="sidebar-link">Image Captioning</a>
         </nav>
