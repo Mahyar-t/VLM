@@ -657,13 +657,7 @@
                                     <option value="Salesforce/blip-image-captioning-large">BLIP Large (High Quality)
                                     </option>
                                     <option value="Salesforce/blip-image-captioning-base">BLIP Base (Faster)</option>
-                                    <option value="__local__">📁 Custom Local Path...</option>
                                 </select>
-                            </label>
-                            <label id="localPathLabel" style="display:none; margin-top:2rem;">Local Model Path
-                                <input type="text" id="localPathInput"
-                                    placeholder="e.g. /home/user/models/blip2 or custom HuggingFace ID"
-                                    autocomplete="off">
                             </label>
                             <label style="margin-top:2rem;">Captioning Mode
                                 <select id="captionModeSelect" name="captionMode">
@@ -897,10 +891,7 @@
             async function triggerPreload() {
                 let selectedModel = '';
                 if (activeTab === 'traditional') {
-                    const localPathInput = document.getElementById('localPathInput');
-                    selectedModel = modelSelect.value === '__local__'
-                        ? localPathInput.value.trim()
-                        : modelSelect.value;
+                    selectedModel = modelSelect.value;
                 } else if (activeTab === 'llm') {
                     const llmModelInput = document.getElementById('llmModelValue');
                     if (llmModelInput) {
@@ -908,7 +899,7 @@
                     }
                 }
 
-                if (!selectedModel || selectedModel === '__local__') return;
+                if (!selectedModel) return;
 
                 const selectedDevice = deviceSelect.value;
                 submitBtn.disabled = true;
@@ -1007,16 +998,7 @@
                 }
             }
 
-            modelSelect.addEventListener('change', () => {
-                const localPathLabel = document.getElementById('localPathLabel');
-                const localPathInput = document.getElementById('localPathInput');
-                const isLocal = modelSelect.value === '__local__';
-                localPathLabel.style.display = isLocal ? 'flex' : 'none';
-                if (!isLocal) triggerPreload();
-                if (isLocal) {
-                    localPathInput.onblur = () => { if (localPathInput.value.trim()) triggerPreload(); };
-                }
-            });
+            modelSelect.addEventListener('change', triggerPreload);
             deviceSelect.addEventListener('change', triggerPreload);
 
             // --- Tab Logic ---
@@ -1069,14 +1051,12 @@
 
             form.onsubmit = async (e) => {
                 e.preventDefault();
-                const localPathInput = document.getElementById('localPathInput');
-
                 let resolvedModel = '';
                 let conditionValue = '';
 
                 if (activeTab === 'traditional') {
-                    resolvedModel = modelSelect.value === '__local__' ? localPathInput.value.trim() : modelSelect.value;
-                    if (!resolvedModel || resolvedModel === '__local__') return alert('Select a Captioning Model first');
+                    resolvedModel = modelSelect.value;
+                    if (!resolvedModel) return alert('Select a Captioning Model first');
 
                     if (captionModeSelect.value === 'conditional') {
                         conditionValue = document.getElementById('conditionInputTrad').value.trim();
