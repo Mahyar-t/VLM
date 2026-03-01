@@ -22,6 +22,7 @@ The Java application automatically starts the Python Uvicorn server in the backg
 cd /home/mahyart/Desktop/github_repos/VLM/webapp
 
 # run the spring boot app
+kill -9 $(lsof -t -i:8000)
 mvn spring-boot:run
 ```
 
