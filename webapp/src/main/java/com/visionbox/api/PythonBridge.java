@@ -52,7 +52,7 @@ public class PythonBridge {
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(new java.io.File("python_server.log")));
             serverProcess = pb.start();
             System.out.println(
-                    "Started VisionBox FastAPI Server on port 8000 in the background. Logs in python_server.log");
+                    "Started NiluLab FastAPI Server on port 8000 in the background. Logs in python_server.log");
 
             // Allow server a moment to start before requests hit it
             Thread.sleep(2000);
