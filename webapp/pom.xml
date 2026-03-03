@@ -15,7 +15,7 @@
     <artifactId>visionbox-api</artifactId>
     <version>0.1.0</version>
     <name>visionbox-api</name>
-    <description>REST API for VisionBox image classification webapp</description>
+    <description>REST API for NiluLab image classification webapp</description>
 
     <properties>
         <java.version>11</java.version>

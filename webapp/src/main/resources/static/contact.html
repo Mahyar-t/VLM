@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisionBox - Contact</title>
+    <title>NiluLab - Contact</title>
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -177,9 +177,7 @@
             transform: translateY(8px) rotate(45deg);
         }
 
-        .menu-btn.active span:nth-child(2) {
-            opacity: 0;
-        }
+        .menu-btn.active span:nth-child(2) {}
 
         .menu-btn.active span:nth-child(3) {
             transform: translateY(-8px) rotate(-45deg);
@@ -456,11 +454,15 @@
 </head>
 
 <body>
-    <button class="menu-btn" id="menuBtn"><span></span><span></span><span></span></button>
+    <button class="menu-btn" id="menuBtn">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
     <div class="overlay" id="overlay"></div>
 
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header"><a href="/"><img src="/logo.png" alt="VisionBox Logo"></a></div>
+        <div class="sidebar-header"><a href="/"><img src="/logo.png" alt="NiluLab Logo"></a></div>
         <nav class="sidebar-nav">
             <a href="/" class="sidebar-link">Dashboard</a>
             <a href="/inference.html" class="sidebar-link">Image Classifiers</a>
@@ -473,7 +475,7 @@
 
     <header class="top-bar">
         <div class="top-bar-brand">
-            <h1><a href="/">VisionBox</a></h1>
+            <h1><a href="/">NiluLab</a></h1>
             <p>Computer Vision Toolkit</p>
         </div>
         <nav class="top-nav">

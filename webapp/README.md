@@ -1,6 +1,6 @@
-# VisionBox Web App
+# NiluLab Web App
 
-The VisionBox web app provides a beautiful user interface for interacting with various Computer Vision models including Image Captioning, Visual Question Answering, and core Image Classification.
+The NiluLab web app provides a beautiful user interface for interacting with various Computer Vision models including Image Captioning, Visual Question Answering, and core Image Classification.
 
 The backend uses a **Java Spring Boot** application that acts as a bridge, automatically starting and serving the **FastAPI** Python application in the background!
 
