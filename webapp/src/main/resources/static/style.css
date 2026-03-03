@@ -1,0 +1,293 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scrollbar-gutter: stable;
+}
+
+:root {
+    --bg: #DAE4E8;
+    --primary: #5FD1D4;
+    --secondary: #82D2D5;
+    --dark: #1C3342;
+    --white: #FFFFFF;
+    --sidebar-width: 280px;
+    --radius: 12px;
+}
+
+body {
+    font-family: 'Rubik', sans-serif;
+    background-color: var(--dark);
+    background-image:
+        radial-gradient(circle at center, rgba(10, 25, 38, 0) 0%, rgba(10, 25, 38, 0.3) 100%),
+        url('hero-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: var(--white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.main-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding-top: 7.5rem;
+    animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* -- Sidebar Navigation -- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: calc(-1 * var(--sidebar-width));
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: rgba(28, 51, 66, 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--white);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    padding: 2rem 2rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar.active {
+    transform: translateX(var(--sidebar-width));
+}
+
+.sidebar-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 6.5rem;
+    margin-bottom: 1.2rem;
+    gap: 1rem;
+}
+
+.sidebar-header img {
+    height: 120px;
+    filter: drop-shadow(0 0 15px rgba(95, 209, 212, 0.4));
+}
+
+.sidebar-header a {
+    transition: transform 0.3s ease;
+}
+
+.sidebar-header a:hover {
+    transform: scale(1.05);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-link {
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sidebar-link:hover {
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
+}
+
+.sidebar-link.active {
+    color: var(--primary);
+    background: rgba(95, 209, 212, 0.15);
+    border-left: 3px solid var(--primary);
+}
+
+
+/* -- Hamburger Button -- */
+.menu-btn {
+    position: fixed;
+    top: 40px;
+    left: 40px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.menu-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.menu-btn span {
+    width: 24px;
+    height: 2px;
+    background: var(--white);
+    border-radius: 2px;
+    transition: all 0.3s;
+}
+
+.menu-btn.active span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+
+.menu-btn.active span:nth-child(2) {}
+
+.menu-btn.active span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+/* -- Top Bar -- */
+.top-bar {
+    position: fixed;
+    top: 40px;
+    left: 110px;
+    height: 50px;
+    width: fit-content;
+    z-index: 10;
+    animation: fadeIn 1s ease-out;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    gap: 20px;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.top-bar.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-15px);
+}
+
+.top-bar-brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.top-bar-brand h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -1px;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+    line-height: 1;
+}
+
+.top-bar-brand h1 a {
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.3s;
+}
+
+.top-bar-brand h1 a:hover {
+    opacity: 0.8;
+}
+
+.top-bar-brand p {
+    font-size: 0.75rem;
+    color: var(--white);
+    opacity: 0.9;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1;
+    padding-right: 15px;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Top Navigation */
+.top-nav {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.top-nav a {
+    color: var(--white) !important;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.3s, transform 0.3s;
+    opacity: 0.8;
+}
+
+.top-nav a:hover {
+    color: var(--primary) !important;
+    transform: translateY(-2px);
+    opacity: 1;
+}
+
+/* Overlay to close sidebar */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(28, 51, 66, 0.2);
+    backdrop-filter: blur(4px);
+    visibility: hidden;
+    transition: all 0.4s;
+    z-index: 999;
+}
+
+.overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
