@@ -9,7 +9,11 @@ import argparse
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
 # Path to local model based on your project structure
-QWEN_LOCAL_PATH = "Qwen/Qwen2.5-VL-3B-Instruct"
+_QWEN_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "Qwen/Qwen2.5-VL-3B-Instruct"
+)
+QWEN_LOCAL_PATH = _QWEN_DIR if os.path.exists(_QWEN_DIR) else "Qwen/Qwen2.5-VL-3B-Instruct"
 
 def main(image_path, prompt, max_tokens):
     print("Loading processor...")

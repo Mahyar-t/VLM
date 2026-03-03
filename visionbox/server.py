@@ -23,7 +23,11 @@ from transformers import (
 
 # Local Qwen2.5-VL model path (sentinel value used as model_name by the frontend)
 QWEN_LOCAL_ID  = "local::Qwen2.5-VL-3B"
-QWEN_LOCAL_PATH = "Qwen/Qwen2.5-VL-3B-Instruct"
+_QWEN_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "Qwen/Qwen2.5-VL-3B-Instruct"
+)
+QWEN_LOCAL_PATH = _QWEN_DIR if os.path.exists(_QWEN_DIR) else "Qwen/Qwen2.5-VL-3B-Instruct"
 
 from visionbox.utils import get_device
 
