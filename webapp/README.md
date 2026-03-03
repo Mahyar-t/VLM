@@ -14,7 +14,31 @@ The backend uses a **Java Spring Boot** application that acts as a bridge, autom
 
 ---
 
-## 2. Run the Web Application
+## 2. Using Qwen 2.5-VL
+
+The Image Captioning multimodal LLM feature requires the **Qwen2.5-VL-3B-Instruct** model. 
+Since the backend uses the Hugging Face Hub directly, the application will automatically download and cache it (`~/.cache/huggingface/hub/`) the first time it is requested. 
+
+If you prefer to download it manually before starting the app to avoid long loading times, you have two options:
+
+**Option A: Hugging Face CLI (Recommended)**
+1. Install the CLI:
+   ```bash
+   pip install -U "huggingface_hub[cli]"
+   ```
+2. Download the model to your local cache:
+   ```bash
+   huggingface-cli download Qwen/Qwen2.5-VL-3B-Instruct
+   ```
+
+**Option B: Manual Repository Visit**
+You can also visit the official repository directly to view the model, read its documentation, or manually pull the files :
+👉 [https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main)
+and save them to the root directory under this sub-directory Qwen/Qwen2.5-VL-3B-Instruct
+
+---
+
+## 3. Run the Web Application
 
 The Java application automatically starts the Python Uvicorn server in the background for you. To start it:
 
@@ -28,7 +52,7 @@ mvn spring-boot:run
 
 ---
 
-## 3. Accessing the UI
+## 4. Accessing the UI
 
 Once the server says "Started Application", open your web browser and navigate to:
 
@@ -41,7 +65,7 @@ From the dashboard, you can access all features through the sidebar:
 
 ---
 
-## 4. Troubleshooting Models / VRAM
+## 5. Troubleshooting Models / VRAM
 
 The app loads deep learning models directly into your GPU VRAM (`cuda`):
 - If you face `Out of Memory` (OOM) errors, click the red **`Reset the cache models`** button in the web app UI to unconditionally clear the loaded models.

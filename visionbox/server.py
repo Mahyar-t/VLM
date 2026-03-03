@@ -23,10 +23,7 @@ from transformers import (
 
 # Local Qwen2.5-VL model path (sentinel value used as model_name by the frontend)
 QWEN_LOCAL_ID  = "local::Qwen2.5-VL-3B"
-QWEN_LOCAL_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    "models", "Qwen2_5_3B"
-)
+QWEN_LOCAL_PATH = "Qwen/Qwen2.5-VL-3B-Instruct"
 
 from visionbox.utils import get_device
 
@@ -89,13 +86,12 @@ def load_qwen_caption_model(device: str, precision: str = "4"):
             quant_cfg = BitsAndBytesConfig(load_in_8bit=True)
 
         loading_states[state_key] = "loading_processor"
-        processor = AutoProcessor.from_pretrained(QWEN_LOCAL_PATH, local_files_only=True)
+        processor = AutoProcessor.from_pretrained(QWEN_LOCAL_PATH)
         loading_states[state_key] = "loading_model"
         
         model_kwargs = {
             "device_map": "auto",
             "attn_implementation": "sdpa",
-            "local_files_only": True,
         }
         if quant_cfg:
             model_kwargs["quantization_config"] = quant_cfg

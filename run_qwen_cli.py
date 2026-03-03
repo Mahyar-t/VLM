@@ -9,14 +9,11 @@ import argparse
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
 # Path to local model based on your project structure
-QWEN_LOCAL_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "models", "Qwen2_5_3B"
-)
+QWEN_LOCAL_PATH = "Qwen/Qwen2.5-VL-3B-Instruct"
 
 def main(image_path, prompt, max_tokens):
     print("Loading processor...")
-    processor = AutoProcessor.from_pretrained(QWEN_LOCAL_PATH, local_files_only=True)
+    processor = AutoProcessor.from_pretrained(QWEN_LOCAL_PATH)
 
     print("Loading 4-bit quantized model (this may take a minute)...")
     quant_cfg = BitsAndBytesConfig(
@@ -31,7 +28,6 @@ def main(image_path, prompt, max_tokens):
         quantization_config=quant_cfg,
         device_map="auto",
         attn_implementation="sdpa",
-        local_files_only=True,
     )
     model.eval()
 
