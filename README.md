@@ -1,4 +1,4 @@
-# VisionBox API
+# NiluLab API
 
 A small Python package for **image classification** by **fine-tuning pretrained torchvision models**, based on the notebook you provided.
 
