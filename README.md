@@ -12,16 +12,16 @@ Or build a wheel:
 
 ```bash
 pip wheel . -w dist
-pip install dist/imgcls_ft-0.1.0-py3-none-any.whl
+pip install dist/*.whl
 ```
 
-## Image Classification Fine-Tuning 
+## Image Classification Fine-Tuning
 
 NiluLab provides built-in Command Line Interfaces (CLIs) to easily fine-tune PyTorch image classification models (like MobileNet, ResNet, etc.) on your own custom datasets. This is useful when you want to train a lightweight model to recognize specific categories (e.g., classifying types of plants, separating good vs. defective manufacturing parts, etc.) rather than relying on a heavy General Purpose Vision Model.
 
 ### Dataset format (ImageFolder)
 
-To train a model, your image dataset must be organized in the standard PyTorch `ImageFolder` structure. 
+To train a model, your image dataset must be organized in the standard PyTorch `ImageFolder` structure.
 The directory name forms the class label that the model will learn to predict.
 
 Expected directory structure:
@@ -46,12 +46,14 @@ imgcls-train --data-dir /path/to/data_dir \
   --epochs 20 --batch-size 32 --lr 1e-4 \
   --checkpoint best.pt --save-class-map class_to_idx.json
 ```
+
 - `--model`: The torchvision architecture to use (e.g., `mobilenet_v3_small`, `resnet18`).
 - `--checkpoint`: Where the trained model weights will be saved.
 - `--save-class-map`: Generates a JSON file mapping folder names (e.g., `class_a`) to numeric IDs, which is required for making predictions later.
 
 **Monitoring with TensorBoard:**
 You can track training accuracy and loss in real-time by directing the logs to a folder:
+
 ```bash
 imgcls-train --data-dir /path/to/data_dir --log-dir runs/exp1
 tensorboard --logdir runs
@@ -100,25 +102,28 @@ python run_qwen_cli.py /path/to/image.jpg
 ```
 
 **Custom Prompt:**
+
 ```bash
 python run_qwen_cli.py /path/to/image.jpg --prompt "Extract all the text present in this image."
 ```
 
 **Custom Output Length:**
+
 ```bash
 python run_qwen_cli.py /path/to/image.jpg --max_tokens 128
 ```
 
 ## Reset the Cached Models (Web UI)
 
-The **"Reset the cached models"** button on the Image Captioning page is used to free up GPU Memory (VRAM). 
+The **"Reset the cached models"** button on the Image Captioning page is used to free up GPU Memory (VRAM).
 
-NiluLab supports large multimodal models (such as Qwen2.5-VL and BLIP) which are kept cached in VRAM after being loaded to ensure fast subsequent generations. However, loading multiple large models can lead to Out of Memory (OOM) errors on systems with limited GPU memory. 
+NiluLab supports large multimodal models (such as Qwen2.5-VL and BLIP) which are kept cached in VRAM after being loaded to ensure fast subsequent generations. However, loading multiple large models can lead to Out of Memory (OOM) errors on systems with limited GPU memory.
 
 Clicking this button sends a request from the web interface to the backend server to entirely unload all cached models, perform garbage collection, and explicitly clear the CUDA cache (`torch.cuda.empty_cache()`). This fully releases the VRAM back to the system, allowing you to load different models from scratch without memory crashes.
 
 **How VRAM Monitoring Works:**
 The web interface features a real-time VRAM usage indicator. This works via a polling mechanism:
+
 1. Every 5 seconds, the frontend (`caption.html`) hits the `/api/gpu-stats` endpoint on the Java Spring Boot backend.
 2. The Java backend relays this fetch to the Python FastAPI backend, which relies on `torch.cuda.memory_allocated()` to report exactly how much VRAM is currently held by loaded model weights and PyTorch tensors.
 3. The UI updates the usage pill based on this data (showing the allocated VRAM vs the GPU's total VRAM).
