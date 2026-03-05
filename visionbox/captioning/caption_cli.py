@@ -1,6 +1,6 @@
 import argparse
 import sys
-from visionbox.caption import generate_caption
+from visionbox.captioning.caption import generate_caption
 
 def parse_args():
     p = argparse.ArgumentParser(description="Run Image Captioning on an image.")

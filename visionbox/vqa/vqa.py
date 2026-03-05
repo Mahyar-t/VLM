@@ -4,7 +4,7 @@ import contextlib
 import torch
 from PIL import Image
 
-from .utils import get_device
+from ..utils import get_device
 
 # Suppress library warnings that might interfere with stdout parsing
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"

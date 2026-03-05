@@ -14,7 +14,7 @@ os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 import logging
 logging.getLogger("transformers").setLevel(logging.ERROR)
 
-from .utils import load_checkpoint, get_device
+from ..utils import load_checkpoint, get_device
 from .model import create_model
 
 

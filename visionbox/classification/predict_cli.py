@@ -1,9 +1,8 @@
-
 from __future__ import annotations
 import argparse
 import json
 
-from visionbox.predict import predict_image
+from visionbox.classification.predict import predict_image
 
 
 def parse_args():

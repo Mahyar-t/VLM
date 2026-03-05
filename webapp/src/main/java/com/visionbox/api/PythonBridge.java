@@ -45,7 +45,7 @@ public class PythonBridge {
             killExistingServerOnPort(8000);
 
             // Start the Uvicorn FastAPI server in the background
-            List<String> cmd = List.of(resolveScriptPath("python"), "-m", "uvicorn", "visionbox.server:app", "--port",
+            List<String> cmd = List.of(resolveScriptPath("python"), "-m", "uvicorn", "visionbox.backend:app", "--port",
                     "8000");
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.redirectErrorStream(true);

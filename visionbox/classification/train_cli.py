@@ -6,10 +6,10 @@ from pathlib import Path
 
 import torch
 
-from visionbox.config import DataConfig, TrainConfig
-from visionbox.data import build_dataloaders
-from visionbox.engine import fit
-from visionbox.model import create_model, freeze_backbone, num_trainable_params
+from visionbox.classification.config import DataConfig, TrainConfig
+from visionbox.classification.data import build_dataloaders
+from visionbox.classification.engine import fit
+from visionbox.classification.model import create_model, freeze_backbone, num_trainable_params
 from visionbox.utils import get_device, set_seed
 
 

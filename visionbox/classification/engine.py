@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from .utils import save_checkpoint
+from ..utils import save_checkpoint
 
 
 @dataclass
