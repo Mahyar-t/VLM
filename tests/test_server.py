@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from visionbox.server import app, models, loading_states
+from visionbox.backend import app, models, loading_states
 
 client = TestClient(app)
 
