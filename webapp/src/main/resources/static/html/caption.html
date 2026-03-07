@@ -30,8 +30,7 @@
                             GPU READY: <span id="vramValue" style="color: var(--primary);">-- / -- MB</span>
                         </div>
                     </div>
-                    <button type="button" id="freeMemBtn"
-                        style="padding: 0.6rem 1.2rem; background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.4); border-radius: 8px; color: #e74c3c; cursor: pointer; transition: all 0.3s; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                    <button type="button" id="freeMemBtn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
@@ -256,7 +255,8 @@
 
                     const res = await fetch('/api/free-memory', { method: 'POST' });
                     if (res.ok) {
-                        freeMemBtn.innerHTML = '✅ Cleared';
+                        freeMemBtn.innerHTML = '✅ Done';
+                        freeMemBtn.classList.add('success');
 
                         // Reset UI state
                         const progressContainer = document.getElementById('loadProgressContainer');
@@ -264,14 +264,14 @@
                         const resetBtn = document.getElementById('resetQueueBtn');
                         if (resetBtn) resetBtn.style.display = 'none';
 
-                        modelSelect.value = '';
-                        document.getElementById('localPathLabel').style.display = 'none';
+                        if (modelSelect) modelSelect.value = '';
                         submitBtn.innerHTML = 'Generate Caption';
                         submitBtn.disabled = false;
 
                         setTimeout(() => {
                             freeMemBtn.innerHTML = originalHtml;
                             freeMemBtn.disabled = false;
+                            freeMemBtn.classList.remove('success');
                         }, 2000);
                     } else {
                         throw new Error();
