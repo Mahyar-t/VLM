@@ -38,10 +38,10 @@ data_dir/
 
 ### Train (CLI)
 
-The `imgcls-train` command initiates the fine-tuning process. It reads your dataset, initializes the specified base model with pretrained weights, and trains it to recognize your custom classes.
+The `visionbox-train` command initiates the fine-tuning process. It reads your dataset, initializes the specified base model with pretrained weights, and trains it to recognize your custom classes.
 
 ```bash
-imgcls-train --data-dir /path/to/data_dir \
+visionbox-train --data-dir /path/to/data_dir \
   --model mobilenet_v3_small \
   --epochs 20 --batch-size 32 --lr 1e-4 \
   --checkpoint best.pt --save-class-map class_to_idx.json
@@ -55,16 +55,16 @@ imgcls-train --data-dir /path/to/data_dir \
 You can track training accuracy and loss in real-time by directing the logs to a folder:
 
 ```bash
-imgcls-train --data-dir /path/to/data_dir --log-dir runs/exp1
+visionbox-train --data-dir /path/to/data_dir --log-dir runs/exp1
 tensorboard --logdir runs
 ```
 
 ### Predict (CLI)
 
-Once training is complete, use `imgcls-predict` to test your trained model on a new, unseen image.
+Once training is complete, use `visionbox-predict` to test your trained model on a new, unseen image.
 
 ```bash
-imgcls-predict --image /path/to/image.jpg \
+visionbox-predict --image /path/to/image.jpg \
   --weights best.pt \
   --class-map class_to_idx.json
 ```
@@ -74,10 +74,10 @@ imgcls-predict --image /path/to/image.jpg \
 ## Python usage
 
 ```python
-from imgcls_ft.data import build_dataloaders
-from imgcls_ft.model import create_model
-from imgcls_ft.engine import fit
-from imgcls_ft.utils import get_device, set_seed
+from visionbox.classification.data import build_dataloaders
+from visionbox.classification.model import create_model
+from visionbox.classification.engine import fit
+from visionbox.utils import get_device, set_seed
 
 set_seed(42)
 train_loader, val_loader, class_to_idx = build_dataloaders("/path/to/data_dir")
@@ -91,4 +91,4 @@ hist = fit(model, train_loader, val_loader, optimizer, device=get_device("cuda")
 ## Notes
 
 - Default normalization mean/std match the notebook's Monkey Species dataset. If your dataset differs, pass `--mean` and `--std`, or change `DataConfig`.
-- The package supports a few common torchvision backbones; extend `imgcls_ft/model.py` if needed.
+- The package supports a few common torchvision backbones; extend `visionbox/classification/model.py` if needed.
