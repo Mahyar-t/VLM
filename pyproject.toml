@@ -25,10 +25,10 @@ dependencies = [
 dev = ["black", "ruff"]
 
 [project.scripts]
-visionbox-train = "visionbox.cli.train:main"
-visionbox-predict = "visionbox.cli.predict:main"
-visionbox-vqa = "visionbox.cli.vqa:main"
-visionbox-caption = "visionbox.cli.caption:main"
+visionbox-train = "visionbox.classification.train_cli:main"
+visionbox-predict = "visionbox.classification.predict_cli:main"
+visionbox-vqa = "visionbox.vqa.vqa_cli:main"
+visionbox-caption = "visionbox.captioning.caption_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
