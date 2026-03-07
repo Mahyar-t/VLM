@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NiluLab API - VQA</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/vqa.css">
+</head>
+
+<body>
+    <div id="sidebar-placeholder"></div>
+
+
+    <div class="main-wrapper">
+
+
+
+        <div class="container">
+            <div class="card">
+                <h2>Visual Question Answering</h2>
+                <form id="vqaForm">
+                    <div class="drop-zone" id="dropZone">
+                        <p>Drag & drop or click to upload</p>
+                        <div class="preview-container" id="previewContainer">
+                            <img id="previewImage" src="" alt="Preview">
+                            <button type="button"
+                                style="position:absolute;top:15px;right:15px;background:var(--dark);color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;"
+                                id="removePhotoBtn">REMOVE</button>
+                        </div>
+                    </div>
+                    <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
+
+                    <div class="form-grid">
+                        <label>VQA Model
+                            <select id="modelSelect" name="model">
+                                <option value="" selected disabled>-- Select a Model --</option>
+                                <option value="Salesforce/blip-vqa-capfilt-large">BLIP VQA Capfilt Large (High Quality)
+                                </option>
+                                <option value="Salesforce/blip-vqa-base">BLIP VQA Base (Faster)</option>
+                            </select>
+                        </label>
+                        <label>Question
+                            <input type="text" name="question" placeholder="e.g. What color is the car in the image?"
+                                required>
+                        </label>
+                        <label>Device
+                            <select id="deviceSelect" name="device">
+                                <option value="cpu">CPU</option>
+                                <option value="cuda" selected>CUDA</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <button class="btn" type="submit" id="submitBtn" disabled>Generate Answer</button>
+
+                    <!-- Progress bar shown during model loading -->
+                    <div id="loadProgressContainer" style="display:none; width:100%; margin-top: 0.5rem;">
+                        <div
+                            style="display:flex; justify-content:space-between; font-size:0.75rem; color: var(--primary); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">
+                            <span id="loadStageLabel">Loading...</span>
+                            <span id="loadPercent">0%</span>
+                        </div>
+                        <div
+                            style="background:rgba(255,255,255,0.08); border-radius:99px; height:6px; overflow:hidden;">
+                            <div id="loadProgressBar"
+                                style="height:100%; width:0%; background: linear-gradient(90deg, var(--primary), #00f0ff); border-radius:99px; transition: width 0.4s ease;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="results">
+                        <p id="resultsBody" style="opacity: 0.5;">Waiting for question...</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            // Common UI logic handled by common.js
+
+            const fileInput = document.getElementById('imageInput');
+            const dropZone = document.getElementById('dropZone');
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const removePhotoBtn = document.getElementById('removePhotoBtn');
+            const form = document.getElementById('vqaForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const resultsBody = document.getElementById('resultsBody');
+
+            dropZone.onclick = () => fileInput.click();
+            fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
+            removePhotoBtn.onclick = (e) => { e.stopPropagation(); fileInput.value = ''; previewContainer.classList.remove('active'); resultsBody.innerHTML = "Waiting for question..."; resultsBody.style.opacity = 0.5; };
+
+            function showPreview(file) {
+                const reader = new FileReader();
+                reader.onload = e => { previewImage.src = e.target.result; previewContainer.classList.add('active'); };
+                reader.readAsDataURL(file);
+            }
+
+            const modelSelect = document.getElementById('modelSelect');
+            const deviceSelect = document.getElementById('deviceSelect');
+
+            async function triggerPreload() {
+                const selectedModel = modelSelect.value;
+                if (!selectedModel) return;
+
+                const selectedDevice = deviceSelect.value;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="spinner"></span> Loading...`;
+
+                // Show the progress bar
+                const progressContainer = document.getElementById('loadProgressContainer');
+                const progressBar = document.getElementById('loadProgressBar');
+                const stageLabel = document.getElementById('loadStageLabel');
+                const percentLabel = document.getElementById('loadPercent');
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '5%';
+                stageLabel.textContent = 'Queued...';
+                percentLabel.textContent = '5%';
+
+                // Start polling for real stage updates
+                let pollInterval = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch(`/api/preload-status?model_name=${encodeURIComponent(selectedModel)}&device=${encodeURIComponent(selectedDevice)}`);
+                        if (!statusRes.ok) return;
+                        const status = await statusRes.json();
+                        progressBar.style.width = status.percent + '%';
+                        stageLabel.textContent = status.label;
+                        percentLabel.textContent = status.percent + '%';
+                        if (status.stage === 'done' || status.stage === 'error') {
+                            clearInterval(pollInterval);
+                        }
+                    } catch (_) { /* ignore transient errors */ }
+                }, 500);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('model', selectedModel);
+                    formData.append('device', selectedDevice);
+                    formData.append('task', 'vqa');
+
+                    const res = await fetch('/api/preload', { method: 'POST', body: formData });
+                    clearInterval(pollInterval);
+                    if (res.ok) {
+                        progressBar.style.width = '100%';
+                        stageLabel.textContent = 'Ready!';
+                        percentLabel.textContent = '100%';
+                        setTimeout(() => { progressContainer.style.display = 'none'; }, 1000);
+                        submitBtn.innerHTML = 'Generate Answer';
+                        submitBtn.disabled = false;
+                    } else {
+                        throw new Error("Failed to load model.");
+                    }
+                } catch (e) {
+                    clearInterval(pollInterval);
+                    progressContainer.style.display = 'none';
+                    submitBtn.innerHTML = 'Preload Failed. Try Generation manually.';
+                    submitBtn.disabled = false;
+                }
+            }
+
+            modelSelect.addEventListener('change', triggerPreload);
+            deviceSelect.addEventListener('change', triggerPreload);
+
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const resolvedModel = modelSelect.value;
+                if (!resolvedModel) return alert('Select a VQA Model first');
+                if (!fileInput.files.length) return alert('Select image');
+                const questionInput = document.querySelector('input[name="question"]').value;
+                if (!questionInput.trim()) return alert('Please enter a question');
+
+                resultsBody.innerHTML = 'Thinking...';
+                resultsBody.style.opacity = 1;
+
+                submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+                submitBtn.disabled = true;
+                try {
+                    const res = await fetch('/api/vqa', { method: 'POST', body: new FormData(form) });
+                    const json = await res.json();
+                    if (json.status === 'ok') {
+                        resultsBody.innerHTML = json.answer;
+                        resultsBody.style.color = "var(--primary)";
+                        resultsBody.style.fontWeight = "bold";
+                        resultsBody.style.fontSize = "2rem";
+                    } else {
+                        alert(json.message);
+                        resultsBody.innerHTML = "Error occurred.";
+                        resultsBody.style.opacity = 0.5;
+                    }
+                } catch (err) {
+                    alert(err.message);
+                    resultsBody.innerHTML = "Error occurred.";
+                    resultsBody.style.opacity = 0.5;
+                }
+                finally { submitBtn.innerHTML = 'Generate Answer'; submitBtn.disabled = false; }
+            };
+        </script>
+    <script src="/js/transition.js"></script>
+    <script src="/js/common.js"></script>
+</body>
+
+</html>

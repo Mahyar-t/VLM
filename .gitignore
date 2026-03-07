@@ -61,8 +61,8 @@ cover/
 *.png
 *.jpeg
 
-!/home/mahyart/Desktop/github_repos/VLM/webapp/src/main/resources/static/hero-bg.jpg
-!/home/mahyart/Desktop/github_repos/VLM/webapp/src/main/resources/static/logo.png
+!/home/mahyart/Desktop/github_repos/VLM/webapp/src/main/resources/static/images/hero-bg.jpg
+!/home/mahyart/Desktop/github_repos/VLM/webapp/src/main/resources/static/images/logo.png
 # -------------------------------------------------------------------
 # Frameworks / tools
 # -------------------------------------------------------------------
@@ -195,3 +195,6 @@ site/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+# Large Qwen model weights
+Qwen/Qwen2.5-VL-3B-Instruct/model-00001-of-00002.safetensors
+Qwen/Qwen2.5-VL-3B-Instruct/model-00002-of-00002.safetensors

@@ -1,0 +1,148 @@
+/* ── Main wrapper ── */
+.main-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding-top: 7.5rem;
+    animation: fadeIn 1s ease-out forwards;
+}
+
+/* ── About content ── */
+.about-container {
+    max-width: 1100px;
+    width: 100%;
+    padding: 0 4rem 6rem;
+}
+
+.about-heading {
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: -2px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    line-height: 1;
+}
+
+.about-heading .accent {
+    color: var(--primary);
+    filter: drop-shadow(0 0 20px rgba(95, 209, 212, 0.35));
+}
+
+.about-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: var(--radius);
+    padding: 3rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+}
+
+.about-body {
+    font-size: 1.1rem;
+    line-height: 1.85;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 300;
+}
+
+.about-body .highlight {
+    color: var(--white);
+    font-weight: 500;
+}
+
+.about-body .highlight-accent {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+/* Profile photo */
+.profile-photo {
+    float: right;
+    margin: 0 0 2rem 2.5rem;
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+}
+
+.profile-photo:hover {
+    transform: scale(1.04);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(95, 209, 212, 0.15);
+}
+
+/* Divider */
+.divider {
+    width: 5rem;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), transparent);
+    border-radius: 99px;
+    margin: 2.5rem 0;
+}
+
+/* ── Social buttons ── */
+.social-links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2.5rem;
+}
+
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 99px;
+    color: var(--white);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.social-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.social-btn.linkedin:hover {
+    background: #0077b5;
+    border-color: transparent;
+}
+
+.social-btn.github:hover {
+    background: #333;
+    border-color: transparent;
+}
+
+.social-btn.contact:hover {
+    background: var(--primary);
+    border-color: transparent;
+    color: var(--dark);
+}
+
+.social-btn.contact svg {
+    fill: none;
+    stroke: currentColor;
+}
+
+/* ── Paragraph spacing ── */
+.about-body p+p {
+    margin-top: 1.5rem;
+}
+
+.about-body p:first-child {
+    margin-top: 0;
+}

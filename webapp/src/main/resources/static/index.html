@@ -5,107 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NiluLab API - Exploration</title>
-    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css">
-    <style>
-
-    </style>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
 
-    <button class="menu-btn" id="menuBtn">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
+    <div id="sidebar-placeholder"></div>
 
-    <div class="overlay" id="overlay"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="/"><img src="/logo.png" alt="NiluLab Logo"></a>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="/" class="sidebar-link active">Dashboard</a>
-            <a href="/inference.html" class="sidebar-link">Image Classifiers</a>
-            <a href="/vqa.html" class="sidebar-link">Visual Question Answering</a>
-            <a href="/caption.html" class="sidebar-link">Image Captioning</a>
-        </nav>
-        <div style="margin-top: auto;">
-            <a href="https://github.com/Mahyar-t/VLM" target="_blank" class="sidebar-link">GitHub Repo</a>
-        </div>
-    </aside>
-
-    <header class="top-bar">
-        <div class="top-bar-brand">
-            <h1><a href="/">NiluLab</a></h1>
-            <p>Computer Vision Toolkit</p>
-        </div>
-        <nav class="top-nav">
-            <a href="/about.html">About</a>
-            <a href="/contact.html">Contact</a>
-        </nav>
-    </header>
-
-    <script>
-        const menuBtn = document.getElementById('menuBtn');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-
-        function toggleSidebar() {
-            const isActive = menuBtn.classList.toggle('active');
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        menuBtn.addEventListener('click', toggleSidebar);
-        overlay.addEventListener('click', toggleSidebar);
-
-        // Scroll-to-hide top bar
-        (function () {
-            var lastScroll = 0;
-            var topBar = document.querySelector('.top-bar');
-            window.addEventListener('scroll', function () {
-                var current = window.scrollY || document.documentElement.scrollTop;
-                if (current > lastScroll && current > 80) {
-                    topBar.classList.add('hidden');
-                } else {
-                    topBar.classList.remove('hidden');
-                }
-                lastScroll = current <= 0 ? 0 : current;
-            }, { passive: true });
-        })();
-    </script>
-
-    <script>
-        // Page fade-in on load
-        document.addEventListener("DOMContentLoaded", function () {
-            requestAnimationFrame(function () { document.body.style.opacity = "1"; });
-        });
-        // Fade-out only for sidebar navigation links (not the menu toggle or form links)
-        document.querySelectorAll("a.sidebar-link, .sidebar-header a, .top-nav a").forEach(function (link) {
-            link.addEventListener("click", function (e) {
-                var href = link.getAttribute("href");
-                if (href && href !== window.location.pathname && !href.startsWith("#")) {
-                    e.preventDefault();
-                    // Close sidebar first, then fade and navigate
-                    var sidebar = document.getElementById("sidebar");
-                    var overlay = document.getElementById("overlay");
-                    var menuBtn = document.getElementById("menuBtn");
-                    if (sidebar) { sidebar.classList.remove("active"); }
-                    if (overlay) { overlay.classList.remove("active"); }
-                    if (menuBtn) { menuBtn.classList.remove("active"); }
-                    setTimeout(function () {
-                        document.body.style.opacity = "0";
-                        setTimeout(function () { window.location.href = href; }, 620);
-                    }, 150);
-                }
-            });
-        });
-    </script>
+    <script src="/js/transition.js"></script>
+    <script src="/js/common.js"></script>
 </body>
 
 </html>
