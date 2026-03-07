@@ -8,230 +8,12 @@
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/pages/style.css">
-    <style>
-        /* -- Main Content -- */
-
-        .container {
-            max-width: 1400px;
-            width: 100%;
-            padding: 0 4rem 4rem;
-            z-index: 10;
-        }
-
-        .card {
-            background: rgba(28, 51, 66, 0.9);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: var(--radius);
-            padding: 3rem;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        h2 {
-            font-weight: 700;
-            font-size: 1.6rem;
-            margin-bottom: 2.5rem;
-            color: var(--white);
-            text-transform: uppercase;
-            letter-spacing: -0.5px;
-        }
-
-        .drop-zone {
-            width: 100%;
-            height: 400px;
-            border: 2px dashed rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.4);
-            transition: all .2s;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            cursor: pointer;
-            margin-bottom: 3.5rem;
-            position: relative;
-            font-size: 1.2rem;
-        }
-
-        .drop-zone:hover {
-            border-color: var(--primary);
-            background: rgba(95, 209, 212, 0.05);
-            color: var(--primary);
-        }
-
-        .preview-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: none;
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        .preview-container.active {
-            display: block;
-        }
-
-        .preview-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #000;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .form-grid label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-        }
-
-        .form-grid input,
-        .form-grid select {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 1.2rem 1.5rem;
-            color: var(--white);
-            font-family: inherit;
-            font-size: 1.1rem;
-            transition: border-color 0.2s;
-        }
-
-        .form-grid select option {
-            background-color: var(--dark);
-            color: var(--white);
-        }
-
-        .form-grid input:focus,
-        .form-grid select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .btn {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            color: var(--white);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.2rem 3rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            margin-top: 1rem;
-        }
-
-        .btn:hover {
-            background: var(--primary);
-            border-color: var(--primary);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(95, 209, 212, 0.3);
-            color: var(--dark);
-        }
-
-        .results {
-            margin-top: 3rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius);
-            padding: 2rem;
-            min-height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .results p {
-            font-size: 1.5rem;
-            color: var(--white);
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255, 255, 255, .3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin .6s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes pulse {
-            from {
-                opacity: 0.4;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/vqa.css">
 </head>
 
 <body>
-    <button class="menu-btn" id="menuBtn">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
-    <div class="overlay" id="overlay"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header"><a href="/"><img src="/images/logo.png" alt="Logo"></a></div>
-        <nav class="sidebar-nav">
-            <a href="/" class="sidebar-link">Dashboard</a>
-            <a href="/pages/inference.html" class="sidebar-link">Image Classifiers</a>
-            <a href="/pages/vqa.html" class="sidebar-link active">Visual Question Answering</a>
-            <a href="/pages/caption.html" class="sidebar-link">Image Captioning</a>
-        </nav>
-        <div style="margin-top:auto;"><a href="https://github.com/Mahyar-t/VLM" target="_blank"
-                class="sidebar-link">GitHub Repo</a></div>
-    </aside>
-    <header class="top-bar">
-        <div class="top-bar-brand">
-            <h1><a href="/">NiluLab</a></h1>
-            <p>Computer Vision Toolkit</p>
-        </div>
-        <nav class="top-nav">
-            <a href="/pages/about.html">About</a>
-            <a href="/pages/contact.html">Contact</a>
-        </nav>
-    </header>
+    <div id="sidebar-placeholder"></div>
 
 
     <div class="main-wrapper">
@@ -299,27 +81,7 @@
         </div>
 
         <script>
-            const menuBtn = document.getElementById('menuBtn');
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            function toggleSidebar() { menuBtn.classList.toggle('active'); sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
-            menuBtn.addEventListener('click', toggleSidebar);
-            overlay.addEventListener('click', toggleSidebar);
-
-            // Scroll-to-hide top bar
-            (function () {
-                var lastScroll = 0;
-                var topBar = document.querySelector('.top-bar');
-                window.addEventListener('scroll', function () {
-                    var current = window.scrollY || document.documentElement.scrollTop;
-                    if (current > lastScroll && current > 80) {
-                        topBar.classList.add('hidden');
-                    } else {
-                        topBar.classList.remove('hidden');
-                    }
-                    lastScroll = current <= 0 ? 0 : current;
-                }, { passive: true });
-            })();
+            // Common UI logic handled by common.js
 
             const fileInput = document.getElementById('imageInput');
             const dropZone = document.getElementById('dropZone');
@@ -439,32 +201,8 @@
                 finally { submitBtn.innerHTML = 'Generate Answer'; submitBtn.disabled = false; }
             };
         </script>
-        <script>
-            // Page fade-in on load
-            document.addEventListener("DOMContentLoaded", function () {
-                requestAnimationFrame(function () { document.body.style.opacity = "1"; });
-            });
-            // Fade-out only for sidebar navigation links (not the menu toggle or form links)
-            document.querySelectorAll("a.sidebar-link, .sidebar-header a, .top-nav a").forEach(function (link) {
-                link.addEventListener("click", function (e) {
-                    var href = link.getAttribute("href");
-                    if (href && href !== window.location.pathname && !href.startsWith("#")) {
-                        e.preventDefault();
-                        // Close sidebar first, then fade and navigate
-                        var sidebar = document.getElementById("sidebar");
-                        var overlay = document.getElementById("overlay");
-                        var menuBtn = document.getElementById("menuBtn");
-                        if (sidebar) { sidebar.classList.remove("active"); }
-                        if (overlay) { overlay.classList.remove("active"); }
-                        if (menuBtn) { menuBtn.classList.remove("active"); }
-                        setTimeout(function () {
-                            document.body.style.opacity = "0";
-                            setTimeout(function () { window.location.href = href; }, 620);
-                        }, 150);
-                    }
-                });
-            });
-        </script>
+    <script src="/js/transition.js"></script>
+    <script src="/js/common.js"></script>
 </body>
 
 </html>

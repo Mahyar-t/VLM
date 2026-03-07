@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NiluLab - Contact</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/contact.css">
+</head>
+
+<body>
+    <div id="sidebar-placeholder"></div>
+
+    <div class="main-wrapper">
+        <div class="contact-container">
+
+            <h1 class="contact-heading">Get In <span class="accent">Touch</span></h1>
+
+            <div class="contact-card">
+                <form id="contactForm">
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" placeholder="john@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" rows="5" placeholder="How can I help?"
+                            required></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="submit-btn" type="submit" id="submitBtn">Send Message</button>
+                        <span class="status-msg" id="statusMsg"></span>
+                    </div>
+
+                    <p class="powered-by">Powered by FormSubmit.</p>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Common UI logic handled by common.js
+
+        // ── Form submission via FormSubmit ──
+        document.getElementById('contactForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const msg = document.getElementById('statusMsg');
+            const form = e.target;
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            msg.className = 'status-msg';
+            msg.textContent = '';
+
+            const payload = {
+                name: form.name.value,
+                email: form.email.value,
+                message: form.message.value
+            };
+
+            try {
+                const res = await fetch('https://formsubmit.co/ajax/mahyar.taherpour@outlook.com', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    msg.textContent = 'Message sent successfully!';
+                    msg.className = 'status-msg success';
+                    form.reset();
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (err) {
+                msg.textContent = 'Failed to send. Please try again.';
+                msg.className = 'status-msg error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Message';
+            }
+        });
+    </script>
+    <script src="/js/transition.js"></script>
+    <script src="/js/common.js"></script>
+</body>
+
+</html>
