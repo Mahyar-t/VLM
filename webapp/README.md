@@ -114,3 +114,7 @@ The web interface features a real-time VRAM usage indicator. This works via a po
 2. The Java backend relays this fetch to the Python FastAPI backend, which relies on `torch.cuda.memory_allocated()` to report exactly how much VRAM is currently held by loaded model weights and PyTorch tensors.
 3. The UI updates the usage pill based on this data (showing the allocated VRAM vs the GPU's total VRAM).
 4. When you click **"Reset the cached models"**, the VRAM is cleared as explained above. On the very next 5-second polling tick, the `torch.cuda.memory_allocated()` call accurately reads near 0 MB (or significantly less) since memory was released, turning the UI indicator green to confirm to the user that the GPU is ready for the next model.
+
+# Design Decisions
+
+The design and logo are inspired by the ancient lotus flower (Niloofar in Farsi) one of the most sacred and ubiquitous symbols of the Achaemenid and Sassanid Empires and a symbol of peace and love. This motif can be seen in Persepolis and other historical sites in Iran, with roots dating back roughly 2,500 years.
