@@ -61,8 +61,8 @@ cover/
 *.png
 *.jpeg
 
-!/home/mahyart/Desktop/github_repos/VLM/webapp/src/main/resources/static/images/hero-bg.jpg
-!/home/mahyart/Desktop/github_repos/VLM/webapp/src/main/resources/static/images/logo.png
+!webapp/src/main/resources/static/images/hero-bg.jpg
+!webapp/src/main/resources/static/images/logo.png
 # -------------------------------------------------------------------
 # Frameworks / tools
 # -------------------------------------------------------------------
