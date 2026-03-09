@@ -174,6 +174,27 @@ def load_clip_model(device: str):
             models[key] = (processor, model)
     return models[key]
 
+
+
+def load_yolo_model(model_name: str, device: str):
+    key = f"yolo_{model_name}_{device}"
+    state_key = f"{model_name}::{device}"
+    if key not in models:
+        clear_other_models(key)
+        print(f"Loading YOLO model {model_name} into VRAM...")
+        dev = get_device(device)
+        loading_states[state_key] = "loading_model"
+        
+        # Load Ultralytics YOLO model
+        from ultralytics import YOLO
+        import io
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            model = YOLO(model_name)
+            model.to(dev)
+            models[key] = (None, model)
+        loading_states[state_key] = "done"
+    return models[key]
+
 from pydantic import BaseModel
 
 class CaptionRequest(BaseModel):
@@ -194,6 +215,12 @@ class PredictRequest(BaseModel):
     image_base64: str
     candidate_classes: Optional[str] = None
     topk: int = 5
+    device: str = "cuda"
+
+class DetectRequest(BaseModel):
+    image_base64: str
+    model_name: str = "yolo11n.pt"
+    threshold: float = 0.5
     device: str = "cuda"
 
 class PreloadRequest(BaseModel):
@@ -419,5 +446,20 @@ async def predict_image(req: PredictRequest):
         out = [{"class": classes[int(i)], "probability": float(p)} for p, i in zip(top_probs.cpu(), top_idx.cpu())]
         
         return {"predictions": out}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/detect")
+async def detect_objects(req: DetectRequest):
+    try:
+        contents = base64.b64decode(req.image_base64)
+        img = Image.open(io.BytesIO(contents)).convert("RGB")
+        dev = get_device(req.device)
+        
+        _, model = load_yolo_model(req.model_name, req.device)
+        from visionbox.yolo.predict import get_prediction
+        result = get_prediction(model, img, req.threshold, dev)
+        
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

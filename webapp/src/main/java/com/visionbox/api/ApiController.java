@@ -83,6 +83,41 @@ public class ApiController {
         }
     }
 
+    // ── Detect ───────────────────────────────────────────────────────────────
+
+    @PostMapping("/api/detect")
+    public ResponseEntity<?> detect(
+            @RequestParam("image") MultipartFile image,
+            @RequestParam(value = "model", defaultValue = "yolo11n.pt") String modelName,
+            @RequestParam(value = "threshold", defaultValue = "0.5") float threshold,
+            @RequestParam(value = "device", defaultValue = "cuda") String device) {
+        try {
+            String originalName = image.getOriginalFilename();
+            String suffix = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf('.'))
+                    : ".jpg";
+            Path tempImage = Files.createTempFile("detect_upload_", suffix);
+            image.transferTo(tempImage.toFile());
+
+            Map<String, Object> result = bridge.detect(
+                    tempImage.toAbsolutePath().toString(),
+                    modelName,
+                    threshold,
+                    device);
+
+            Files.deleteIfExists(tempImage);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("result", result);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
     // ── VQA ──────────────────────────────────────────────────────────────────
 
     @PostMapping("/api/vqa")

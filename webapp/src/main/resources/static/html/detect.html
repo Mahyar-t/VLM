@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NiluLab API - Object Detection</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/caption.css">
+    <style>
+        #boxCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sidebar-placeholder"></div>
+
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="card">
+                <h2>Object Detection (YOLO)</h2>
+                    <form id="detectForm">
+                        <div class="drop-zone" id="dropZone">
+                            <p>Drag & drop or click to upload</p>
+                            <div class="preview-container" id="previewContainer">
+                                <img id="previewImage" src="" alt="Preview">
+                                <canvas id="boxCanvas"></canvas>
+                                <button type="button"
+                                    style="position:absolute;top:15px;right:15px;background:var(--dark);color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;z-index:20;"
+                                    id="removePhotoBtn">REMOVE</button>
+                            </div>
+                        </div>
+                        <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
+
+                        <div class="form-grid">
+                            <label>Model Architecture
+                                <select name="model" id="modelSelect">
+                                    <option value="yolo11n.pt" selected>YOLO11 Nano (Fastest)</option>
+                                    <option value="yolo11s.pt">YOLO11 Small</option>
+                                    <option value="yolo11m.pt">YOLO11 Medium (Balanced)</option>
+                                    <option value="yolo11l.pt">YOLO11 Large</option>
+                                    <option value="yolo11x.pt">YOLO11 Extra Large (Highest Accuracy)</option>
+                                </select>
+                            </label>
+                            <label>Threshold (0.0 - 1.0)
+                                <input type="number" step="0.05" name="threshold" id="thresholdInput" value="0.5" min="0" max="1">
+                            </label>
+                            <label>Device
+                                <select name="device">
+                                    <option value="cpu">CPU</option>
+                                    <option value="cuda" selected>CUDA</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <button class="btn" type="submit" id="submitBtn">Detect Objects</button>
+                    </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('imageInput');
+        const dropZone = document.getElementById('dropZone');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const boxCanvas = document.getElementById('boxCanvas');
+        const removePhotoBtn = document.getElementById('removePhotoBtn');
+        const form = document.getElementById('detectForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let originalImageWidth = 0;
+        let originalImageHeight = 0;
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
+        
+        removePhotoBtn.onclick = (e) => { 
+            e.stopPropagation(); 
+            fileInput.value = ''; 
+            previewContainer.classList.remove('active'); 
+            const ctx = boxCanvas.getContext('2d');
+            ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
+        };
+
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = e => { 
+                previewImage.src = e.target.result; 
+                previewImage.onload = () => {
+                    originalImageWidth = previewImage.naturalWidth;
+                    originalImageHeight = previewImage.naturalHeight;
+                    
+                    // Match canvas coordinate space to the image's layout dimensions
+                    // We'll update this right before drawing to ensure accurate CSS layout match
+                };
+                previewContainer.classList.add('active'); 
+                const ctx = boxCanvas.getContext('2d');
+                ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!fileInput.files.length) return alert('Select an image first');
+
+            submitBtn.innerHTML = '<span class="spinner"></span> Detecting...';
+            submitBtn.disabled = true;
+
+            const ctx = boxCanvas.getContext('2d');
+            ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
+
+            try {
+                const res = await fetch('/api/detect', { method: 'POST', body: new FormData(form) });
+                const json = await res.json();
+                
+                if (json.status === 'ok') {
+                    drawBoxes(json.result);
+                } else {
+                    alert(json.message);
+                }
+            } catch (err) {
+                alert(err.message);
+            } finally { 
+                submitBtn.innerHTML = 'Detect Objects'; 
+                submitBtn.disabled = false; 
+            }
+        };
+
+        function drawBoxes(detectionResult) {
+            if (!detectionResult || !detectionResult.boxes) return;
+
+            const boxes = detectionResult.boxes;
+            const classes = detectionResult.classes;
+            const scores = detectionResult.scores;
+
+            const containerWidth = previewImage.clientWidth;
+            const containerHeight = previewImage.clientHeight;
+            
+            boxCanvas.width = containerWidth;
+            boxCanvas.height = containerHeight;
+            
+            const imgRatio = originalImageWidth / originalImageHeight;
+            const containerRatio = containerWidth / containerHeight;
+            
+            let drawWidth, drawHeight, offsetX, offsetY;
+            
+            if (containerRatio > imgRatio) {
+                drawHeight = containerHeight;
+                drawWidth = containerHeight * imgRatio;
+                offsetX = (containerWidth - drawWidth) / 2;
+                offsetY = 0;
+            } else {
+                drawWidth = containerWidth;
+                drawHeight = containerWidth / imgRatio;
+                offsetX = 0;
+                offsetY = (containerHeight - drawHeight) / 2;
+            }
+
+            const scaleX = drawWidth / originalImageWidth;
+            const scaleY = drawHeight / originalImageHeight;
+
+            const ctx = boxCanvas.getContext('2d');
+            ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
+
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 14px "Rubik", sans-serif';
+            ctx.textBaseline = 'top';
+
+            // Generate an array of distinct colors based on classes
+            const colorHues = {
+                'person': '#e74c3c', 'car': '#3498db', 'bus': '#f1c40f', 'truck': '#e67e22',
+                'bicycle': '#9b59b6', 'motorcycle': '#1abc9c', 'airplane': '#34495e'
+            };
+
+            for (let i = 0; i < boxes.length; i++) {
+                const [x1, y1, x2, y2] = boxes[i];
+                const cls = classes[i];
+                const score = (scores[i] * 100).toFixed(1);
+
+                const color = colorHues[cls] || `hsl(${(cls.charCodeAt(0) * 45) % 360}, 70%, 50%)`;
+
+                const scaledX1 = offsetX + (x1 * scaleX);
+                const scaledY1 = offsetY + (y1 * scaleY);
+                const scaledWidth = (x2 - x1) * scaleX;
+                const scaledHeight = (y2 - y1) * scaleY;
+
+                // Draw Box
+                ctx.strokeStyle = color;
+                ctx.strokeRect(scaledX1, scaledY1, scaledWidth, scaledHeight);
+
+                // Draw Label Background
+                const text = `${cls} ${score}%`;
+                const textWidth = ctx.measureText(text).width;
+                const textHeight = 20;
+
+                ctx.fillStyle = color;
+                // Draw background slightly above the box, or inside if it clips top
+                const bgY = scaledY1 - textHeight >= 0 ? scaledY1 - textHeight : scaledY1;
+                ctx.fillRect(scaledX1, bgY, textWidth + 10, textHeight);
+
+                // Draw Label Text
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(text, scaledX1 + 5, bgY + 3);
+            }
+        }
+        
+        // Redraw correctly on resize
+        window.addEventListener('resize', () => {
+            // Re-triggering draw not implemented for simplicity, clear canvas on resize or wait for new submit.
+            const ctx = boxCanvas.getContext('2d');
+            ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
+        });
+
+    </script>
+    <script src="/js/transition.js"></script>
+    <script src="/js/common.js"></script>
+</body>
+
+</html>
