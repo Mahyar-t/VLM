@@ -195,6 +195,40 @@ def load_yolo_model(model_name: str, device: str):
         loading_states[state_key] = "done"
     return models[key]
 
+def load_grounding_dino_model(model_name: str, device: str):
+    key = f"gdino_{model_name}_{device}"
+    state_key = f"{model_name}::{device}"
+    if key not in models:
+        clear_other_models(key)
+        print(f"Loading Grounding DINO {model_name} into VRAM...")
+        dev = get_device(device)
+        loading_states[state_key] = "loading_processor"
+        from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            processor = AutoProcessor.from_pretrained(model_name)
+            loading_states[state_key] = "loading_model"
+            model = AutoModelForZeroShotObjectDetection.from_pretrained(model_name).to(dev)
+            models[key] = (processor, model)
+        loading_states[state_key] = "done"
+    return models[key]
+
+def load_sam_model(model_name: str, device: str):
+    key = f"sam_{model_name}_{device}"
+    state_key = f"{model_name}::{device}"
+    if key not in models:
+        clear_other_models(key)
+        print(f"Loading SAM {model_name} into VRAM...")
+        dev = get_device(device)
+        loading_states[state_key] = "loading_processor"
+        from transformers import AutoProcessor, AutoModelForMaskGeneration
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            processor = AutoProcessor.from_pretrained(model_name)
+            loading_states[state_key] = "loading_model"
+            model = AutoModelForMaskGeneration.from_pretrained(model_name).to(dev)
+            models[key] = (processor, model)
+        loading_states[state_key] = "done"
+    return models[key]
+
 from pydantic import BaseModel
 
 class CaptionRequest(BaseModel):
@@ -211,6 +245,9 @@ class VQARequest(BaseModel):
     model_name: str = "Salesforce/blip-vqa-base"
     device: str = "cuda"
 
+# State for Smart Detection progress
+smart_detect_state = {}
+
 class PredictRequest(BaseModel):
     image_base64: str
     candidate_classes: Optional[str] = None
@@ -222,6 +259,16 @@ class DetectRequest(BaseModel):
     model_name: str = "yolo11n.pt"
     threshold: float = 0.5
     device: str = "cuda"
+
+class SmartDetectRequest(BaseModel):
+    image_base64: str
+    user_query: str
+    qwen_model_name: str = QWEN_LOCAL_ID
+    gdino_model_name: str = "IDEA-Research/grounding-dino-tiny"
+    sam_model_name: str = "facebook/sam2-hiera-tiny"
+    device: str = "cuda"
+    threshold: float = 0.3
+    precision: str = "4"
 
 class PreloadRequest(BaseModel):
     model_name: str
@@ -463,3 +510,47 @@ async def detect_objects(req: DetectRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/smart-detect")
+async def smart_detect_objects(req: SmartDetectRequest):
+    try:
+        dev = get_device(req.device)
+        
+        req_params = {
+            "device": req.device,
+            "precision": req.precision,
+            "gdino_name": req.gdino_model_name,
+            "sam_name": req.sam_model_name
+        }
+        load_fns = (load_qwen_caption_model, load_grounding_dino_model, load_sam_model)
+        
+        from visionbox.smart_detect.pipeline import run_smart_detect
+        contents = base64.b64decode(req.image_base64)
+        img = Image.open(io.BytesIO(contents)).convert("RGB")
+        
+        def update_status(stage, percent, label):
+            smart_detect_state["stage"] = stage
+            smart_detect_state["percent"] = percent
+            smart_detect_state["label"] = label
+            
+        smart_detect_state.clear()
+        update_status("queued", 5, "Queued...")
+        
+        result = await asyncio.to_thread(
+            run_smart_detect,
+            img, req.user_query, req.threshold,
+            req_params, load_fns, update_status
+        )
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        smart_detect_state["stage"] = "error"
+        smart_detect_state["label"] = str(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/smart-detect-status")
+async def get_smart_detect_status():
+    if not smart_detect_state:
+        return {"stage": "idle", "percent": 0, "label": "Waiting..."}
+    return smart_detect_state

@@ -29,7 +29,26 @@
     <div class="main-wrapper">
         <div class="container">
             <div class="card">
-                <h2>Object Detection (YOLO)</h2>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 style="margin: 0;">Object Detection</h2>
+                        <div id="vramDisplay"
+                            style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; color: rgba(255,255,255,0.7); font-weight: 500;">
+                            <span
+                                style="width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #2ecc71;"></span>
+                            GPU READY: <span id="vramValue" style="color: var(--primary);">-- / -- MB</span>
+                        </div>
+                    </div>
+                    <button type="button" id="freeMemBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                        </svg>
+                        reset cached models
+                    </button>
+                </div>
                     <form id="detectForm">
                         <div class="drop-zone" id="dropZone">
                             <p>Drag & drop or click to upload</p>
@@ -43,25 +62,65 @@
                         </div>
                         <input type="file" id="imageInput" name="image" accept="image/*" style="display:none">
 
-                        <div class="form-grid">
-                            <label>Model Architecture
-                                <select name="model" id="modelSelect">
-                                    <option value="yolo11n.pt" selected>YOLO11 Nano (Fastest)</option>
-                                    <option value="yolo11s.pt">YOLO11 Small</option>
-                                    <option value="yolo11m.pt">YOLO11 Medium (Balanced)</option>
-                                    <option value="yolo11l.pt">YOLO11 Large</option>
-                                    <option value="yolo11x.pt">YOLO11 Extra Large (Highest Accuracy)</option>
-                                </select>
-                            </label>
-                            <label>Threshold (0.0 - 1.0)
-                                <input type="number" step="0.05" name="threshold" id="thresholdInput" value="0.5" min="0" max="1">
-                            </label>
-                            <label>Device
-                                <select name="device">
-                                    <option value="cpu">CPU</option>
-                                    <option value="cuda" selected>CUDA</option>
-                                </select>
-                            </label>
+                        <div class="tabs">
+                            <button type="button" class="tab-btn active" onclick="switchTab('yolo', event)">Standard Detection (YOLO)</button>
+                            <button type="button" class="tab-btn" onclick="switchTab('smart', event)">Smart Detection (SOTA)</button>
+                        </div>
+
+                        <!-- YOLO Tab Content -->
+                        <div id="tab-yolo" class="tab-content active">
+                            <div class="form-grid">
+                                <label>Model Architecture
+                                    <select name="model_yolo" id="modelSelect">
+                                        <option value="yolo11n.pt" selected>YOLO11 Nano (Fastest)</option>
+                                        <option value="yolo11s.pt">YOLO11 Small</option>
+                                        <option value="yolo11m.pt">YOLO11 Medium (Balanced)</option>
+                                        <option value="yolo11l.pt">YOLO11 Large</option>
+                                        <option value="yolo11x.pt">YOLO11 Extra Large (Highest Accuracy)</option>
+                                    </select>
+                                </label>
+                                <label>Threshold (0.0 - 1.0)
+                                    <input type="number" step="0.05" name="threshold_yolo" id="thresholdInput" value="0.5" min="0" max="1">
+                                </label>
+                                <label>Device
+                                    <select name="device_yolo">
+                                        <option value="cpu">CPU</option>
+                                        <option value="cuda" selected>CUDA</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Smart Detection Tab Content -->
+                        <div id="tab-smart" class="tab-content">
+                            <div style="margin-bottom: 2rem;">
+                                <label style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; display: flex; flex-direction: column; gap: 0.8rem;">
+                                    User Query / Description
+                                    <textarea name="user_query" id="userQueryInput" placeholder="e.g. find all red cars and pedestrians wearing hats" style="width: 100%; min-height: 100px; padding: 1.2rem 1.5rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; font-family: inherit; font-size: 1.1rem;"></textarea>
+                                </label>
+                            </div>
+                            <div class="form-grid">
+                                <label>Confidence Threshold (0.0 - 1.0)
+                                    <input type="number" step="0.05" name="threshold_smart" id="thresholdInputSmart" value="0.3" min="0" max="1">
+                                </label>
+                                <label>Device
+                                    <select name="device_smart">
+                                        <option value="cpu">CPU</option>
+                                        <option value="cuda" selected>CUDA</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Progress bar shown during model loading -->
+                        <div id="loadProgressContainer" style="display:none; width:100%; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color: var(--primary); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">
+                                <span id="loadStageLabel">Loading...</span>
+                                <span id="loadPercent">0%</span>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.08); border-radius:99px; height:6px; overflow:hidden;">
+                                <div id="loadProgressBar" style="height:100%; width:0%; background: linear-gradient(90deg, var(--primary), #00f0ff); border-radius:99px; transition: width 0.4s ease;"></div>
+                            </div>
                         </div>
 
                         <button class="btn" type="submit" id="submitBtn">Detect Objects</button>
@@ -82,6 +141,108 @@
 
         let originalImageWidth = 0;
         let originalImageHeight = 0;
+        let activeTab = 'yolo';
+
+        // --- VRAM Display Logic ---
+        const freeMemBtn = document.getElementById('freeMemBtn');
+        const vramValue = document.getElementById('vramValue');
+        async function updateVramDisplay() {
+            try {
+                const res = await fetch('/api/gpu-stats');
+                const stats = await res.json();
+                if (stats.error) {
+                    vramValue.textContent = "N/A";
+                } else {
+                    vramValue.textContent = `${Math.round(stats.used)} / ${Math.round(stats.total)} MB`;
+                    const pct = (stats.used / stats.total) * 100;
+                    const dot = vramValue.previousElementSibling;
+                    if (pct > 90) {
+                        dot.style.background = "#e74c3c";
+                        dot.style.boxShadow = "0 0 8px #e74c3c";
+                    } else if (pct > 70) {
+                        dot.style.background = "#f1c40f";
+                        dot.style.boxShadow = "0 0 8px #f1c40f";
+                    } else {
+                        dot.style.background = "#2ecc71";
+                        dot.style.boxShadow = "0 0 8px #2ecc71";
+                    }
+                }
+            } catch (e) {
+                vramValue.textContent = "Error";
+            }
+        }
+        setInterval(updateVramDisplay, 5000);
+        updateVramDisplay();
+
+        freeMemBtn.onclick = async () => {
+            const originalText = freeMemBtn.innerHTML;
+            freeMemBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:8px;"></span> Clearing...';
+            freeMemBtn.disabled = true;
+            try {
+                const res = await fetch('/api/free-memory', { method: 'POST' });
+                if (res.ok) {
+                    freeMemBtn.innerHTML = 'Done';
+                    freeMemBtn.classList.add('success');
+                    setTimeout(() => {
+                        freeMemBtn.innerHTML = originalText;
+                        freeMemBtn.classList.remove('success');
+                        freeMemBtn.disabled = false;
+                        updateVramDisplay();
+                    }, 2000);
+                } else {
+                    throw new Error('Failed to free memory');
+                }
+            } catch (e) {
+                freeMemBtn.innerHTML = 'Error';
+                setTimeout(() => {
+                    freeMemBtn.innerHTML = originalText;
+                    freeMemBtn.disabled = false;
+                }, 2000);
+            }
+        };
+
+        const loadProgressContainer = document.getElementById('loadProgressContainer');
+        const loadStageLabel = document.getElementById('loadStageLabel');
+        const loadProgressBar = document.getElementById('loadProgressBar');
+        const loadPercent = document.getElementById('loadPercent');
+        let statusInterval;
+
+        async function pollStatus() {
+            try {
+                const res = await fetch(`/api/smart-detect-status`);
+                const data = await res.json();
+                
+                loadStageLabel.innerText = data.label;
+                loadProgressBar.style.width = data.percent + '%';
+                loadPercent.innerText = data.percent + '%';
+                
+                if (data.stage === 'error') {
+                    clearInterval(statusInterval);
+                    loadStageLabel.style.color = '#e74c3c';
+                    loadProgressBar.style.background = '#e74c3c';
+                } else {
+                    loadStageLabel.style.color = 'var(--primary)';
+                    loadProgressBar.style.background = 'linear-gradient(90deg, var(--primary), #00f0ff)';
+                }
+            } catch (e) {
+                console.error("Status polling error", e);
+            }
+        }
+
+        function switchTab(tabId, event) {
+            if (activeTab === tabId) return;
+            activeTab = tabId;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            const eventTarget = event.target;
+            eventTarget.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+            
+            // Clear canvas when switching
+            const ctx = boxCanvas.getContext('2d');
+            ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
+        }
 
         dropZone.onclick = () => fileInput.click();
         fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
@@ -101,9 +262,6 @@
                 previewImage.onload = () => {
                     originalImageWidth = previewImage.naturalWidth;
                     originalImageHeight = previewImage.naturalHeight;
-                    
-                    // Match canvas coordinate space to the image's layout dimensions
-                    // We'll update this right before drawing to ensure accurate CSS layout match
                 };
                 previewContainer.classList.add('active'); 
                 const ctx = boxCanvas.getContext('2d');
@@ -116,36 +274,66 @@
             e.preventDefault();
             if (!fileInput.files.length) return alert('Select an image first');
 
-            submitBtn.innerHTML = '<span class="spinner"></span> Detecting...';
+            submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
             submitBtn.disabled = true;
 
             const ctx = boxCanvas.getContext('2d');
             ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
 
             try {
-                const res = await fetch('/api/detect', { method: 'POST', body: new FormData(form) });
+                const formData = new FormData(form);
+                let endpoint = '/api/detect';
+                
+                if (activeTab === 'smart') {
+                    endpoint = '/api/smart-detect';
+                    formData.set('user_query', document.getElementById('userQueryInput').value);
+                    formData.set('threshold', document.getElementById('thresholdInputSmart').value);
+                    formData.set('device', formData.get('device_smart'));
+                    
+                    loadProgressContainer.style.display = 'block';
+                    loadStageLabel.innerText = "Queued...";
+                    loadProgressBar.style.width = '0%';
+                    loadPercent.innerText = '0%';
+                    loadStageLabel.style.color = 'var(--primary)';
+                    loadProgressBar.style.background = 'linear-gradient(90deg, var(--primary), #00f0ff)';
+                    statusInterval = setInterval(pollStatus, 1000);
+                } else {
+                    formData.set('model', formData.get('model_yolo'));
+                    formData.set('threshold', formData.get('threshold_yolo'));
+                    formData.set('device', formData.get('device_yolo'));
+                }
+
+                const res = await fetch(endpoint, { method: 'POST', body: formData });
                 const json = await res.json();
                 
+                if (activeTab === 'smart') {
+                    clearInterval(statusInterval);
+                    loadProgressContainer.style.display = 'none';
+                    updateVramDisplay();
+                }
+
                 if (json.status === 'ok') {
-                    drawBoxes(json.result);
+                    if (activeTab === 'smart') {
+                        drawSmartResults(json.result);
+                    } else {
+                        drawBoxes(json.result);
+                    }
                 } else {
                     alert(json.message);
                 }
             } catch (err) {
                 alert(err.message);
+                if (activeTab === 'smart') {
+                    clearInterval(statusInterval);
+                    loadProgressContainer.style.display = 'none';
+                }
             } finally { 
                 submitBtn.innerHTML = 'Detect Objects'; 
                 submitBtn.disabled = false; 
             }
         };
 
-        function drawBoxes(detectionResult) {
-            if (!detectionResult || !detectionResult.boxes) return;
-
-            const boxes = detectionResult.boxes;
-            const classes = detectionResult.classes;
-            const scores = detectionResult.scores;
-
+        function getDrawingScales() {
             const containerWidth = previewImage.clientWidth;
             const containerHeight = previewImage.clientHeight;
             
@@ -171,15 +359,21 @@
 
             const scaleX = drawWidth / originalImageWidth;
             const scaleY = drawHeight / originalImageHeight;
+            
+            return { scaleX, scaleY, offsetX, offsetY, drawWidth, drawHeight };
+        }
+
+        function drawBoxes(detectionResult) {
+            if (!detectionResult || !detectionResult.boxes) return;
+
+            const { scaleX, scaleY, offsetX, offsetY } = getDrawingScales();
+            const { boxes, classes, scores } = detectionResult;
 
             const ctx = boxCanvas.getContext('2d');
-            ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
-
             ctx.lineWidth = 3;
             ctx.font = 'bold 14px "Rubik", sans-serif';
             ctx.textBaseline = 'top';
 
-            // Generate an array of distinct colors based on classes
             const colorHues = {
                 'person': '#e74c3c', 'car': '#3498db', 'bus': '#f1c40f', 'truck': '#e67e22',
                 'bicycle': '#9b59b6', 'motorcycle': '#1abc9c', 'airplane': '#34495e'
@@ -197,29 +391,97 @@
                 const scaledWidth = (x2 - x1) * scaleX;
                 const scaledHeight = (y2 - y1) * scaleY;
 
-                // Draw Box
                 ctx.strokeStyle = color;
                 ctx.strokeRect(scaledX1, scaledY1, scaledWidth, scaledHeight);
 
-                // Draw Label Background
                 const text = `${cls} ${score}%`;
                 const textWidth = ctx.measureText(text).width;
                 const textHeight = 20;
 
                 ctx.fillStyle = color;
-                // Draw background slightly above the box, or inside if it clips top
                 const bgY = scaledY1 - textHeight >= 0 ? scaledY1 - textHeight : scaledY1;
                 ctx.fillRect(scaledX1, bgY, textWidth + 10, textHeight);
 
-                // Draw Label Text
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(text, scaledX1 + 5, bgY + 3);
+            }
+        }
+
+        async function drawSmartResults(result) {
+            // The backend returns: { queries_used: [...], detections: [{box, label, score, mask_base64}, ...] }
+            const detections = result && result.detections ? result.detections : [];
+            if (!detections.length) {
+                alert('No objects detected for your query.');
+                return;
+            }
+
+            const { scaleX, scaleY, offsetX, offsetY, drawWidth, drawHeight } = getDrawingScales();
+            const ctx = boxCanvas.getContext('2d');
+
+            // Draw masks first (under boxes)
+            for (let i = 0; i < detections.length; i++) {
+                const det = detections[i];
+                if (!det.mask_base64) continue;
+                const cls = det.label || '';
+                const color = `hsl(${(cls.charCodeAt(0) * 45) % 360}, 70%, 50%)`;
+
+                await new Promise((resolve) => {
+                    const maskImg = new Image();
+                    maskImg.onload = () => {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = boxCanvas.width;
+                        tempCanvas.height = boxCanvas.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(maskImg, offsetX, offsetY, drawWidth, drawHeight);
+                        tempCtx.globalCompositeOperation = 'source-in';
+                        tempCtx.fillStyle = color;
+                        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                        ctx.globalAlpha = 0.4;
+                        ctx.drawImage(tempCanvas, 0, 0);
+                        ctx.globalAlpha = 1.0;
+                        resolve();
+                    };
+                    maskImg.onerror = () => resolve();
+                    maskImg.src = 'data:image/png;base64,' + det.mask_base64;
+                });
+            }
+
+            // Draw boxes and labels on top
+            ctx.lineWidth = 2;
+            ctx.font = 'bold 13px "Rubik", sans-serif';
+            ctx.textBaseline = 'top';
+
+            for (let i = 0; i < detections.length; i++) {
+                const det = detections[i];
+                const [x1, y1, x2, y2] = det.box;
+                const cls = det.label || 'object';
+                const score = (det.score * 100).toFixed(1);
+                const color = `hsl(${(cls.charCodeAt(0) * 45) % 360}, 70%, 50%)`;
+
+                const scaledX1 = offsetX + (x1 * scaleX);
+                const scaledY1 = offsetY + (y1 * scaleY);
+                const scaledWidth  = (x2 - x1) * scaleX;
+                const scaledHeight = (y2 - y1) * scaleY;
+
+                // Bounding box
+                ctx.strokeStyle = color;
+                ctx.setLineDash([6, 3]);
+                ctx.strokeRect(scaledX1, scaledY1, scaledWidth, scaledHeight);
+                ctx.setLineDash([]);
+
+                // Label background + text
+                const text = `${cls} ${score}%`;
+                const textWidth = ctx.measureText(text).width;
+                const labelH = 20;
+                const bgY = scaledY1 - labelH >= 0 ? scaledY1 - labelH : scaledY1;
+                ctx.fillStyle = color;
+                ctx.fillRect(scaledX1, bgY, textWidth + 10, labelH);
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(text, scaledX1 + 5, bgY + 3);
             }
         }
         
-        // Redraw correctly on resize
         window.addEventListener('resize', () => {
-            // Re-triggering draw not implemented for simplicity, clear canvas on resize or wait for new submit.
             const ctx = boxCanvas.getContext('2d');
             ctx.clearRect(0, 0, boxCanvas.width, boxCanvas.height);
         });

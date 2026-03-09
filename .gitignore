@@ -198,3 +198,8 @@ __marimo__/
 # Large Qwen model weights
 Qwen/Qwen2.5-VL-3B-Instruct/model-00001-of-00002.safetensors
 Qwen/Qwen2.5-VL-3B-Instruct/model-00002-of-00002.safetensors
+webapp/yolo11x.pt       
+webapp/yolo11n.pt
+webapp/yolo11s.pt
+webapp/yolo11m.pt
+webapp/yolo11l.pt

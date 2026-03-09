@@ -194,6 +194,45 @@ public class PythonBridge {
         return respMap;
     }
 
+    public Map<String, Object> smartDetect(String imagePath, String userQuery, float threshold, String device)
+            throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("image_base64", encodeImageFile(imagePath));
+        payload.put("user_query", userQuery);
+        payload.put("threshold", threshold);
+        if (device != null && !device.isBlank()) {
+            payload.put("device", device);
+        }
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/smart-detect"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(10))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+        return respMap;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> smartDetectStatus() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/smart-detect-status"))
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return mapper.readValue(response.body(), Map.class);
+    }
+
     // ── train ────────────────────────────────────────────────────────────────
 
     public String train(String dataDir,
