@@ -29,7 +29,7 @@ If you prefer to download it manually before starting the app to avoid long load
    huggingface-cli download Qwen/Qwen2.5-VL-3B-Instruct
    ```
 
-**Option B: Manual Repository Visit(Recommended)**
+**Option B: Manual Repository Visit (Recommended)**
 You can also visit the official repository directly to view the model, read its documentation, or manually pull the files:
 👉 [https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main)
 

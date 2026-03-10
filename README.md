@@ -93,7 +93,9 @@ java -jar target/visionbox-api-0.1.0.jar
 The Image Captioning feature uses **Qwen2.5-VL-3B-Instruct**. The app will automatically download it if not found, but we recommend manual placement for a smoother experience.
 
 1. Create a folder named `Qwen` in the root of the repo.
-2. Download all files from [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main) and place them in `Qwen/Qwen2.5-VL-3B-Instruct`.
+2. Download all files from [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main).
+
+If you use this method, you must download all the files and place them inside a folder named `Qwen/Qwen2.5-VL-3B-Instruct` exactly in the **root of the repository**, next to the `webapp` directory. The application will automatically detect this folder and load from it instead of downloading.
 
 Your structure should look like this:
 
