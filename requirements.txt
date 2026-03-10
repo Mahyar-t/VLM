@@ -1,0 +1,13 @@
+torch
+torchvision
+tqdm
+numpy
+pillow
+transformers
+fastapi
+uvicorn
+python-multipart
+ultralytics
+qwen-vl-utils
+bitsandbytes
+accelerate
