@@ -419,9 +419,9 @@ public class PythonBridge {
     // ── video ──────────────────────────────────────────────────────────────
 
     @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> videoClassify(String videoPath, String model, String device) throws Exception {
+    public List<Map<String, Object>> videoClassify(String videoPath, String model, String device,
+            int clipLen, boolean adaptiveStep, boolean overlap, boolean aggregate) throws Exception {
         Map<String, Object> payload = new HashMap<>();
-        // Use same encoding function as images (it just base64 encodes the file)
         payload.put("video_base64", encodeImageFile(videoPath));
         if (model != null && !model.isBlank()) {
             payload.put("model_name", model);
@@ -429,6 +429,10 @@ public class PythonBridge {
         if (device != null && !device.isBlank()) {
             payload.put("device", device);
         }
+        payload.put("clip_len", clipLen);
+        payload.put("use_adaptive_step", adaptiveStep);
+        payload.put("use_overlap", overlap);
+        payload.put("aggregate_clips", aggregate);
 
         String jsonBytes = mapper.writeValueAsString(payload);
         HttpRequest request = HttpRequest.newBuilder()
@@ -447,7 +451,54 @@ public class PythonBridge {
         return (List<Map<String, Object>>) respMap.get("predictions");
     }
 
-    // ── internal ─────────────────────────────────────────────────────────────
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> summarizeVideo(String videoPath, String vjepaModel, String vjepaDevice,
+            String qwenDevice, int clipLen, int kClips) throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("video_base64", encodeImageFile(videoPath));
+        if (vjepaModel != null && !vjepaModel.isBlank()) {
+            payload.put("vjepa_model_name", vjepaModel);
+        }
+        if (vjepaDevice != null && !vjepaDevice.isBlank()) {
+            payload.put("vjepa_device", vjepaDevice);
+        }
+        if (qwenDevice != null && !qwenDevice.isBlank()) {
+            payload.put("qwen_device", qwenDevice);
+        }
+        payload.put("clip_len", clipLen);
+        payload.put("k_clips", kClips);
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/summarize"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(15)) // Summarization can take longer
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        return mapper.readValue(response.body(), Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> listVideoModels() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/available-models"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
 
     private String resolveScriptPath(String scriptName) {
         if (!pythonExec.contains("/") && !pythonExec.contains("\\")) {

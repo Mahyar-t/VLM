@@ -336,4 +336,87 @@ public class ApiController {
                     Map.of("status", "error", "message", e.getMessage()));
         }
     }
+
+    // ── Video Classify ────────────────────────────────────────────────────────
+
+    @PostMapping("/api/video/classify")
+    public ResponseEntity<?> videoClassify(
+            @RequestParam("video") MultipartFile video,
+            @RequestParam(value = "model", defaultValue = "facebook/vjepa2-vitl-fpc16-256-ssv2") String model,
+            @RequestParam(value = "device", defaultValue = "cuda") String device,
+            @RequestParam(value = "clip_len", defaultValue = "64") int clipLen,
+            @RequestParam(value = "use_adaptive_step", defaultValue = "true") boolean adaptiveStep,
+            @RequestParam(value = "use_overlap", defaultValue = "true") boolean overlap,
+            @RequestParam(value = "aggregate_clips", defaultValue = "true") boolean aggregate) {
+        try {
+            String originalName = video.getOriginalFilename();
+            String suffix = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf('.'))
+                    : ".mp4";
+            Path tempVideo = Files.createTempFile("video_upload_", suffix);
+            video.transferTo(tempVideo.toFile());
+
+            java.util.List<Map<String, Object>> predictions = bridge.videoClassify(
+                    tempVideo.toAbsolutePath().toString(), model, device,
+                    clipLen, adaptiveStep, overlap, aggregate);
+
+            Files.deleteIfExists(tempVideo);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("predictions", predictions);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "error", e.getMessage()));
+        }
+    }
+
+    // ── Video Summarize ───────────────────────────────────────────────────────
+
+    @PostMapping("/api/video/summarize")
+    public ResponseEntity<?> videoSummarize(
+            @RequestParam("video") MultipartFile video,
+            @RequestParam(value = "vjepa_model", defaultValue = "facebook/vjepa2-vitl-fpc16-256-ssv2") String vjepaModel,
+            @RequestParam(value = "vjepa_device", defaultValue = "cuda") String vjepaDevice,
+            @RequestParam(value = "qwen_device", defaultValue = "cuda") String qwenDevice,
+            @RequestParam(value = "clip_len", defaultValue = "64") int clipLen,
+            @RequestParam(value = "k_clips", defaultValue = "3") int kClips) {
+        try {
+            String originalName = video.getOriginalFilename();
+            String suffix = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf('.'))
+                    : ".mp4";
+            Path tempVideo = Files.createTempFile("video_summarize_", suffix);
+            video.transferTo(tempVideo.toFile());
+
+            Map<String, Object> result = bridge.summarizeVideo(
+                    tempVideo.toAbsolutePath().toString(), vjepaModel, vjepaDevice, qwenDevice, clipLen, kClips);
+
+            Files.deleteIfExists(tempVideo);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("result", result);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "error", e.getMessage()));
+        }
+    }
+
+    // ── Video Models Listing ──────────────────────────────────────────────────
+
+    @GetMapping("/api/video/models")
+    public ResponseEntity<?> listVideoModels() {
+        try {
+            Map<String, Object> result = bridge.listVideoModels();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "error", e.getMessage()));
+        }
+    }
 }

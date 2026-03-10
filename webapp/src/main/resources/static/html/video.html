@@ -13,11 +13,85 @@
     <link rel="stylesheet" href="/css/style.css" />
     <link rel="stylesheet" href="/css/caption.css" />
     <style>
-      .video-preview {
-        max-width: 100%;
-        max-height: 400px;
-        border-radius: 8px;
+      #uploadBox {
+        position: relative;
+        width: 100%;
+        min-height: 220px;
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: border-color 0.2s;
+        background: rgba(0, 0, 0, 0.15);
+      }
+      #uploadBox:hover {
+        border-color: var(--primary);
+      }
+      #uploadBox.has-video {
+        min-height: unset;
+        border-style: solid;
+        border-color: rgba(255, 255, 255, 0.1);
+        cursor: default;
+      }
+      #uploadBoxPlaceholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.9rem;
+        padding: 2rem;
+        pointer-events: none;
+      }
+      #uploadBoxPlaceholder svg {
+        opacity: 0.4;
+      }
+      #previewVideo {
+        width: 100%;
         display: none;
+        border-radius: 8px 8px 0 0;
+      }
+      .video-controls {
+        display: none;
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .control-btn {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        color: var(--white);
+        padding: 5px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-family: inherit;
+        transition: all 0.2s;
+      }
+      .control-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-1px);
+      }
+      .remove-video-btn {
+        background: rgba(231, 76, 60, 0.15);
+        border: 1px solid rgba(231, 76, 60, 0.4);
+        color: #e74c3c;
+        padding: 5px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-family: inherit;
+        transition: all 0.2s;
+      }
+      .remove-video-btn:hover {
+        background: rgba(231, 76, 60, 0.3);
       }
       .prediction-list {
         margin-top: 20px;
@@ -28,10 +102,11 @@
       .pred-item {
         display: flex;
         justify-content: space-between;
+        align-items: center;
         margin-bottom: 8px;
-        padding: 8px 12px;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 4px;
+        padding: 8px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 6px;
       }
       .pred-item:last-child {
         margin-bottom: 0;
@@ -42,6 +117,7 @@
       }
       .pred-prob {
         color: #ccc;
+        font-size: 0.9rem;
       }
     </style>
   </head>
@@ -52,6 +128,7 @@
     <div class="main-wrapper">
       <div class="container">
         <div class="card">
+          <!-- Header row: title + VRAM + reset button -->
           <div
             style="
               display: flex;
@@ -78,6 +155,7 @@
                 "
               >
                 <span
+                  id="vramDot"
                   style="
                     width: 8px;
                     height: 8px;
@@ -93,32 +171,63 @@
                 >
               </div>
             </div>
+            <button type="button" id="freeMemBtn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                ></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              reset cached models
+            </button>
           </div>
 
           <form id="videoForm">
-            <div class="drop-zone" id="dropZone">
-              <p>Drag & drop or click to upload video (MP4)</p>
-              <div class="preview-container" id="previewContainer">
-                <video id="previewVideo" controls class="video-preview"></video>
+            <!-- Combined upload + preview box -->
+            <div id="uploadBox" onclick="handleBoxClick()">
+              <div id="uploadBoxPlaceholder">
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                  <polygon points="10 9 15 12 10 15" fill="currentColor" />
+                </svg>
+                <span>Drag &amp; drop or click to upload video</span>
+                <span style="font-size: 0.75rem; opacity: 0.6"
+                  >MP4, WebM accepted</span
+                >
+              </div>
+              <video id="previewVideo" controls></video>
+              <div class="video-controls" id="videoControls">
+                <button type="button" class="control-btn" id="playPauseBtn">
+                  ▶ Play
+                </button>
+                <button type="button" class="control-btn" id="restartBtn">
+                  ⏮ Restart
+                </button>
                 <button
                   type="button"
-                  style="
-                    position: absolute;
-                    top: 15px;
-                    right: 15px;
-                    background: var(--dark);
-                    color: #fff;
-                    border: none;
-                    padding: 10px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    z-index: 20;
-                    display: none;
-                  "
+                  class="remove-video-btn"
                   id="removeVideoBtn"
                 >
-                  REMOVE
+                  ✕ Remove
                 </button>
               </div>
             </div>
@@ -130,28 +239,168 @@
               style="display: none"
             />
 
+            <!-- Model settings -->
             <div class="form-grid" style="margin-top: 20px">
               <label
                 >V-JEPA Model
                 <select name="model_name" id="modelSelect">
-                  <option value="facebook/vjepa2-vitl-fpc16-256-ssv2" selected>
-                    ViT-L [~300M] (256 frames, Something-Something V2)
-                  </option>
+                  <option value="" disabled selected>Loading models...</option>
                 </select>
               </label>
               <label
                 >Device
-                <select name="device">
+                <select name="device" id="deviceSelect">
                   <option value="cpu">CPU</option>
                   <option value="cuda" selected>CUDA</option>
                 </select>
               </label>
             </div>
 
-            <button class="btn" type="submit" id="submitBtn">
-              Classify Video
-            </button>
+            <!-- Sampler Settings -->
+            <div class="form-grid" style="margin-top: 20px">
+              <label>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  Clip Length (frames)
+                  <span
+                    title="Splits video into clips of the specified length. Longer clips capture more temporal context."
+                    style="cursor: help; opacity: 0.7"
+                    >&#9432;</span
+                  >
+                </div>
+                <input
+                  type="number"
+                  id="clipLenInput"
+                  value="64"
+                  min="8"
+                  max="256"
+                  style="margin-top: 8px"
+                />
+              </label>
+              <label>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  Adaptive Stepping
+                  <span
+                    title="Picks frame step of 2, 4, or 8 based on motion (MAD) and FPS. High motion scenes are sampled more densely."
+                    style="cursor: help; opacity: 0.7"
+                    >&#9432;</span
+                  >
+                </div>
+                <select id="adaptiveStepSelect" style="margin-top: 8px">
+                  <option value="true" selected>Enabled</option>
+                  <option value="false">Disabled</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-grid" style="margin-top: 20px">
+              <label>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  Overlap Transitions
+                  <span
+                    title="Uses overlapping windows (50% overlap) at scene transitions so no action is missed across cuts."
+                    style="cursor: help; opacity: 0.7"
+                    >&#9432;</span
+                  >
+                </div>
+                <select id="overlapSelect" style="margin-top: 8px">
+                  <option value="true" selected>Enabled</option>
+                  <option value="false">Disabled</option>
+                </select>
+              </label>
+              <label>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  Aggregate Clips
+                  <span
+                    title="Averages predictions (logits) across all sampled clips for a single, stable final prediction."
+                    style="cursor: help; opacity: 0.7"
+                    >&#9432;</span
+                  >
+                </div>
+                <select id="aggregateSelect" style="margin-top: 8px">
+                  <option value="true" selected>Enabled</option>
+                  <option value="false">Disabled</option>
+                </select>
+              </label>
+            </div>
 
+            <!-- Submit buttons -->
+            <div style="display: flex; gap: 10px">
+              <button
+                class="btn"
+                type="submit"
+                id="submitBtn"
+                disabled
+                style="flex: 1"
+              >
+                Classify Video
+              </button>
+              <button
+                class="btn"
+                type="button"
+                id="summarizeBtn"
+                disabled
+                style="
+                  flex: 1;
+                  background: linear-gradient(135deg, #00f0ff, #0055ff);
+                  color: white;
+                  border: none;
+                "
+              >
+                Summarize Video
+              </button>
+            </div>
+
+            <!-- Progress bar for model loading -->
+            <div
+              id="loadProgressContainer"
+              style="display: none; width: 100%; margin-top: 1rem"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 0.75rem;
+                  color: var(--primary);
+                  letter-spacing: 1px;
+                  text-transform: uppercase;
+                  margin-bottom: 4px;
+                "
+              >
+                <span id="loadStageLabel">Loading...</span>
+                <span id="loadPercent">0%</span>
+              </div>
+              <div
+                style="
+                  background: rgba(255, 255, 255, 0.08);
+                  border-radius: 99px;
+                  height: 6px;
+                  overflow: hidden;
+                "
+              >
+                <div
+                  id="loadProgressBar"
+                  style="
+                    height: 100%;
+                    width: 0%;
+                    background: linear-gradient(90deg, var(--primary), #00f0ff);
+                    border-radius: 99px;
+                    transition: width 0.4s ease;
+                  "
+                ></div>
+              </div>
+            </div>
+
+            <!-- Progress bar for summarization -->
+            <div id="summarizeProgressContainer" style="display: none; width: 100%; margin-top: 1rem">
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#00f0ff; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">
+                <span id="summarizeStageLabel">Preparing...</span>
+                <span id="summarizePercent">0%</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.08); border-radius:99px; height:6px; overflow:hidden;">
+                <div id="summarizeProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg,#00f0ff,#0055ff); border-radius:99px; transition:width 0.4s ease;"></div>
+              </div>
+            </div>
+
+            <!-- Results -->
             <div
               id="resultsContainer"
               class="prediction-list"
@@ -160,124 +409,439 @@
               <h3 style="margin-top: 0; color: #fff">Top Predictions</h3>
               <div id="predictionsList"></div>
             </div>
+
+            <!-- Summary Results -->
+            <div
+              id="summaryContainer"
+              class="prediction-list"
+              style="
+                display: none;
+                margin-top: 1rem;
+                background: rgba(0, 40, 60, 0.5);
+                border: 1px solid rgba(0, 240, 255, 0.2);
+              "
+            >
+              <h3
+                style="
+                  margin-top: 0;
+                  color: #00f0ff;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  ></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Video Summary
+              </h3>
+              <div
+                id="summaryText"
+                style="font-size: 0.95rem; line-height: 1.6; color: #e0e0e0"
+              ></div>
+
+              <details style="margin-top: 1rem; cursor: pointer">
+                <summary
+                  style="color: #88c0d0; font-size: 0.85rem; font-weight: bold"
+                >
+                  View Key Scene Descriptions
+                </summary>
+                <ul
+                  id="scenesList"
+                  style="
+                    margin-top: 0.5rem;
+                    padding-left: 20px;
+                    color: #bbb;
+                    font-size: 0.85rem;
+                    line-height: 1.5;
+                  "
+                ></ul>
+              </details>
+            </div>
           </form>
         </div>
       </div>
     </div>
 
     <script>
-      const fileInput = document.getElementById("videoInput");
-      const dropZone = document.getElementById("dropZone");
-      const previewContainer = document.getElementById("previewContainer");
-      const previewVideo = document.getElementById("previewVideo");
-      const removeVideoBtn = document.getElementById("removeVideoBtn");
-      const form = document.getElementById("videoForm");
-      const submitBtn = document.getElementById("submitBtn");
-      const resultsContainer = document.getElementById("resultsContainer");
-      const predictionsList = document.getElementById("predictionsList");
+      const fileInput        = document.getElementById('videoInput');
+      const uploadBox        = document.getElementById('uploadBox');
+      const uploadPlaceholder= document.getElementById('uploadBoxPlaceholder');
+      const previewVideo     = document.getElementById('previewVideo');
+      const videoControls    = document.getElementById('videoControls');
+      const removeVideoBtn   = document.getElementById('removeVideoBtn');
+      const playPauseBtn     = document.getElementById('playPauseBtn');
+      const restartBtn       = document.getElementById('restartBtn');
+      const form             = document.getElementById('videoForm');
+      const submitBtn        = document.getElementById('submitBtn');
+      const summarizeBtn     = document.getElementById('summarizeBtn');
+      const resultsContainer = document.getElementById('resultsContainer');
+      const predictionsList  = document.getElementById('predictionsList');
+      const summaryContainer = document.getElementById('summaryContainer');
+      const summaryText      = document.getElementById('summaryText');
+      const scenesList       = document.getElementById('scenesList');
+      const freeMemBtn       = document.getElementById('freeMemBtn');
+      const modelSelect      = document.getElementById('modelSelect');
+      const deviceSelect     = document.getElementById('deviceSelect');
 
-      // --- VRAM Display Logic ---
-      const vramValue = document.getElementById("vramValue");
-      async function updateVramDisplay() {
+      // --- Load available V-JEPA models from server ---
+      async function loadAvailableModels() {
         try {
-          const res = await fetch("/api/gpu-stats");
-          const stats = await res.json();
-          if (stats.error) {
-            vramValue.textContent = "N/A";
+          const res = await fetch('/api/video/models');
+          if (!res.ok) throw new Error('Failed to fetch models');
+          const data = await res.json();
+          modelSelect.innerHTML = '';
+          if (data.models && data.models.length > 0) {
+            data.models.forEach((m, i) => {
+              const opt = document.createElement('option');
+              opt.value = m.id;
+              opt.textContent = m.name;
+              if (i === 0) opt.selected = true;
+              modelSelect.appendChild(opt);
+            });
           } else {
-            vramValue.textContent = `${Math.round(stats.used)} / ${Math.round(stats.total)} MB`;
-            const pct = (stats.used / stats.total) * 100;
-            const dot = vramValue.previousElementSibling;
-            if (pct > 90) {
-              dot.style.background = "#e74c3c";
-              dot.style.boxShadow = "0 0 8px #e74c3c";
-            } else if (pct > 70) {
-              dot.style.background = "#f1c40f";
-              dot.style.boxShadow = "0 0 8px #f1c40f";
-            } else {
-              dot.style.background = "#2ecc71";
-              dot.style.boxShadow = "0 0 8px #2ecc71";
-            }
+            const opt = document.createElement('option');
+            opt.value = 'facebook/vjepa2-vitl-fpc16-256-ssv2';
+            opt.textContent = 'V-JEPA 2 ViT-L (HuggingFace)';
+            opt.selected = true;
+            modelSelect.appendChild(opt);
           }
         } catch (e) {
-          vramValue.textContent = "Error";
+          modelSelect.innerHTML = '<option value="facebook/vjepa2-vitl-fpc16-256-ssv2" selected>V-JEPA 2 ViT-L (HuggingFace)</option>';
+          console.warn('Could not load model list:', e);
         }
+        // Trigger preload AFTER dropdown is populated so modelSelect.value is set
+        triggerPreload();
       }
-      setInterval(updateVramDisplay, 5000);
-      updateVramDisplay();
 
-      dropZone.onclick = (e) => {
-        if (e.target !== removeVideoBtn) fileInput.click();
-      };
 
-      fileInput.onchange = () => {
-        if (fileInput.files[0]) showPreview(fileInput.files[0]);
-      };
+      function handleBoxClick() {
+        if (!fileInput.files || !fileInput.files.length) fileInput.click();
+      }
+      fileInput.onchange = () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); };
 
-      removeVideoBtn.onclick = (e) => {
-        e.stopPropagation();
-        fileInput.value = "";
-        previewVideo.style.display = "none";
-        previewVideo.src = "";
-        removeVideoBtn.style.display = "none";
-        dropZone.querySelector("p").style.display = "block";
-        resultsContainer.style.display = "none";
-      };
+      uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.style.borderColor = 'var(--primary)'; });
+      uploadBox.addEventListener('dragleave', () => uploadBox.style.borderColor = '');
+      uploadBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadBox.style.borderColor = '';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('video/')) { fileInput.files = e.dataTransfer.files; showPreview(file); }
+      });
 
       function showPreview(file) {
         const url = URL.createObjectURL(file);
         previewVideo.src = url;
-        previewVideo.style.display = "block";
-        removeVideoBtn.style.display = "block";
-        dropZone.querySelector("p").style.display = "none";
-        resultsContainer.style.display = "none";
+        previewVideo.style.display = 'block';
+        videoControls.style.display = 'flex';
+        uploadPlaceholder.style.display = 'none';
+        uploadBox.classList.add('has-video');
+        resultsContainer.style.display = 'none';
+        summaryContainer.style.display = 'none';
+        playPauseBtn.textContent = '⏸ Pause';
       }
 
+      removeVideoBtn.onclick = (e) => {
+        e.stopPropagation();
+        fileInput.value = '';
+        previewVideo.pause();
+        previewVideo.src = '';
+        previewVideo.style.display = 'none';
+        videoControls.style.display = 'none';
+        uploadPlaceholder.style.display = 'flex';
+        uploadBox.classList.remove('has-video');
+        resultsContainer.style.display = 'none';
+        summaryContainer.style.display = 'none';
+      };
+
+      // Combined Play/Pause toggle
+      playPauseBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (previewVideo.paused) {
+          previewVideo.play();
+          playPauseBtn.textContent = '⏸ Pause';
+        } else {
+          previewVideo.pause();
+          playPauseBtn.textContent = '▶ Play';
+        }
+      };
+      previewVideo.onplay  = () => { playPauseBtn.textContent = '⏸ Pause'; };
+      previewVideo.onpause = () => { playPauseBtn.textContent = '▶ Play'; };
+      restartBtn.onclick   = (e) => { e.stopPropagation(); previewVideo.currentTime = 0; previewVideo.play(); };
+
+
+
+      // --- VRAM Display ---
+      const vramValue = document.getElementById('vramValue');
+      const vramDot   = document.getElementById('vramDot');
+      async function updateVramDisplay() {
+        try {
+          const res = await fetch('/api/gpu-stats');
+          const stats = await res.json();
+          if (stats.error) { vramValue.textContent = 'N/A'; return; }
+          vramValue.textContent = `${Math.round(stats.used)} / ${Math.round(stats.total)} MB`;
+          const pct = (stats.used / stats.total) * 100;
+          if (pct > 90)      { vramDot.style.background = '#e74c3c'; vramDot.style.boxShadow = '0 0 8px #e74c3c'; }
+          else if (pct > 70) { vramDot.style.background = '#f1c40f'; vramDot.style.boxShadow = '0 0 8px #f1c40f'; }
+          else               { vramDot.style.background = '#2ecc71'; vramDot.style.boxShadow = '0 0 8px #2ecc71'; }
+        } catch (e) { vramValue.textContent = 'Error'; }
+      }
+      setInterval(updateVramDisplay, 5000);
+      updateVramDisplay();
+
+      // --- Reset cached models ---
+      freeMemBtn.onclick = async () => {
+        const original = freeMemBtn.innerHTML;
+        freeMemBtn.disabled = true;
+        freeMemBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;border-color:#e74c3c;border-top-color:transparent;"></span> Clearing...';
+        try {
+          const res = await fetch('/api/free-memory', { method: 'POST' });
+          if (res.ok) {
+            freeMemBtn.innerHTML = '✅ Done';
+            document.getElementById('loadProgressContainer').style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Classify Video';
+            summarizeBtn.disabled = false;
+            summarizeBtn.innerHTML = 'Summarize Video';
+            setTimeout(() => { freeMemBtn.innerHTML = original; freeMemBtn.disabled = false; }, 2000);
+            // Re-trigger model load
+            triggerPreload();
+          } else { throw new Error('Server returned ' + res.status); }
+        } catch(err) {
+          freeMemBtn.innerHTML = '⚠️ Failed: ' + err.message;
+          setTimeout(() => { freeMemBtn.innerHTML = original; freeMemBtn.disabled = false; }, 3000);
+        }
+      };
+
+      // --- Model preloading ---
+      let preloadPoller = null;
+
+      async function triggerPreload() {
+        if (preloadPoller) clearInterval(preloadPoller);
+
+        const selectedModel  = modelSelect.value;
+        const selectedDevice = deviceSelect.value;
+
+        // Guard: do nothing if no model is selected yet
+        if (!selectedModel || !selectedModel.trim()) {
+          console.warn('triggerPreload: no model selected, skipping.');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Loading Model...';
+
+        const progressContainer = document.getElementById('loadProgressContainer');
+        const progressBar       = document.getElementById('loadProgressBar');
+        const stageLabel        = document.getElementById('loadStageLabel');
+        const percentLabel      = document.getElementById('loadPercent');
+
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '5%';
+        progressBar.style.background = 'linear-gradient(90deg,var(--primary),#00f0ff)';
+        stageLabel.textContent = 'Queued...';
+        percentLabel.textContent = '5%';
+
+        const startTime = Date.now();
+
+        // Fire off the preload request
+        const formData = new FormData();
+        formData.append('model', selectedModel);
+        formData.append('device', selectedDevice);
+        formData.append('task', 'video');
+        fetch('/api/preload', { method: 'POST', body: formData }).catch(() => {});
+
+        // Poll for status
+        preloadPoller = setInterval(async () => {
+          try {
+            const statusRes = await fetch(`/api/preload-status?model_name=${encodeURIComponent(selectedModel)}&device=${encodeURIComponent(selectedDevice)}`);
+            if (!statusRes.ok) return;
+            const status = await statusRes.json();
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            progressBar.style.width = status.percent + '%';
+
+            if (status.stage === 'done') {
+              clearInterval(preloadPoller);
+              progressBar.style.width = '100%';
+              stageLabel.textContent = `Ready! (${elapsed}s)`;
+              percentLabel.textContent = '100%';
+              setTimeout(() => { progressContainer.style.display = 'none'; }, 3000);
+              submitBtn.innerHTML = 'Classify Video';
+              submitBtn.disabled = false;
+              summarizeBtn.disabled = false;
+            } else if (status.stage === 'error') {
+              clearInterval(preloadPoller);
+              progressBar.style.background = '#e74c3c';
+              stageLabel.textContent = `Load failed — press reset to retry`;
+              percentLabel.textContent = '';
+              submitBtn.innerHTML = 'Classify Video';
+              submitBtn.disabled = false;
+              summarizeBtn.disabled = false;
+            } else {
+              stageLabel.textContent = `${status.label} (${elapsed}s)`;
+              percentLabel.textContent = status.percent + '%';
+            }
+          } catch (_) {}
+        }, 1000);
+      }
+
+      // Start loading on page open — wait for model list first to avoid race condition
+      window.addEventListener('load', loadAvailableModels);
+
+      // Re-trigger when model or device selection changes
+      modelSelect.addEventListener('change', triggerPreload);
+      deviceSelect.addEventListener('change', triggerPreload);
+
+      // --- Video classification ---
       form.onsubmit = async (e) => {
         e.preventDefault();
-        if (!fileInput.files.length) return alert("Select a video first");
+        if (!fileInput.files.length) return alert('Select a video first');
 
         submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
         submitBtn.disabled = true;
-        resultsContainer.style.display = "none";
+        summarizeBtn.disabled = true;
+        resultsContainer.style.display = 'none';
 
         try {
           const formData = new FormData();
-          formData.append("video", fileInput.files[0]);
-          formData.append(
-            "model",
-            document.getElementById("modelSelect").value,
-          );
-          formData.append(
-            "device",
-            form.querySelector('[name="device"]').value,
-          );
+          formData.append('video', fileInput.files[0]);
+          formData.append('model', modelSelect.value);
+          formData.append('device', deviceSelect.value);
+          formData.append('clip_len', document.getElementById('clipLenInput').value);
+          formData.append('use_adaptive_step', document.getElementById('adaptiveStepSelect').value);
+          formData.append('use_overlap', document.getElementById('overlapSelect').value);
+          formData.append('aggregate_clips', document.getElementById('aggregateSelect').value);
 
-          const res = await fetch("/api/video/classify", {
-            method: "POST",
-            body: formData,
+          const response = await fetch('/api/video/classify', {
+            method: 'POST',
+            body: formData
           });
-          const json = await res.json();
+          const json = await response.json();
 
-          if (res.ok && json.predictions) {
-            predictionsList.innerHTML = "";
-            json.predictions.forEach((p) => {
-              const item = document.createElement("div");
-              item.className = "pred-item";
-              item.innerHTML = `
-                            <span class="pred-class">${p.class}</span>
-                            <span class="pred-prob">${(p.probability * 100).toFixed(1)}%</span>
-                        `;
+          if (response.ok && json.predictions) {
+            predictionsList.innerHTML = '';
+            json.predictions.forEach(p => {
+              const item = document.createElement('div');
+              item.className = 'pred-item';
+              item.innerHTML = `<span class="pred-class">${p.class}</span><span class="pred-prob">${(p.probability * 100).toFixed(1)}%</span>`;
               predictionsList.appendChild(item);
             });
-            resultsContainer.style.display = "block";
+            resultsContainer.style.display = 'block';
           } else {
-            alert(json.error || "Classification failed");
+            alert(json.error || json.detail || 'Classification failed');
           }
         } catch (err) {
           alert(err.message);
         } finally {
-          submitBtn.innerHTML = "Classify Video";
+          submitBtn.innerHTML = 'Classify Video';
+          submitBtn.disabled = false;
+          summarizeBtn.disabled = false;
+        }
+      };
+
+      // --- Video Summarization ---
+      const summarizeProgress    = document.getElementById('summarizeProgressContainer');
+      const summarizeBar         = document.getElementById('summarizeProgressBar');
+      const summarizeStageLabel  = document.getElementById('summarizeStageLabel');
+      const summarizePercentLbl  = document.getElementById('summarizePercent');
+
+      let summarizePoller = null;
+
+      function startSummarizePoller() {
+        summarizePoller = setInterval(async () => {
+          try {
+            const res = await fetch('/api/video/summarize-status');
+            if (!res.ok) return;
+            const s = await res.json();
+
+            summarizeBar.style.width = (s.percent || 0) + '%';
+            summarizeStageLabel.textContent = s.label || 'Processing...';
+            summarizePercentLbl.textContent = (s.percent || 0) + '%';
+          } catch (_) {}
+        }, 1000);
+      }
+
+      summarizeBtn.onclick = async (e) => {
+        e.stopPropagation();
+        if (!fileInput.files.length) return alert('Select a video first');
+
+        summarizeBtn.innerHTML = '<span class="spinner"></span> Summarizing...';
+        summarizeBtn.disabled = true;
+        submitBtn.disabled = true;
+        summaryContainer.style.display = 'none';
+
+        // Show summarize progress bar
+        summarizeProgress.style.display = 'block';
+        summarizeBar.style.width = '2%';
+        summarizeBar.style.background = 'linear-gradient(90deg,#00f0ff,#0055ff)';
+        summarizeStageLabel.textContent = 'Starting...';
+        summarizePercentLbl.textContent = '0%';
+        startSummarizePoller();
+
+        try {
+          const formData = new FormData();
+          formData.append('video', fileInput.files[0]);
+          formData.append('vjepa_model', modelSelect.value);
+          formData.append('vjepa_device', deviceSelect.value);
+          formData.append('qwen_device', deviceSelect.value);
+          formData.append('clip_len', document.getElementById('clipLenInput').value);
+          formData.append('k_clips', 3);
+
+          const response = await fetch('/api/video/summarize', {
+            method: 'POST',
+            body: formData
+          });
+          const json = await response.json();
+
+          if (response.ok && json.result) {
+            summaryText.textContent = json.result.summary;
+
+            scenesList.innerHTML = '';
+            if (json.result.scenes && json.result.scenes.length > 0) {
+              json.result.scenes.forEach(scene => {
+                const li = document.createElement('li');
+                li.textContent = scene;
+                li.style.marginBottom = '6px';
+                scenesList.appendChild(li);
+              });
+            }
+            summaryContainer.style.display = 'block';
+            // Show 100% briefly
+            summarizeBar.style.width = '100%';
+            summarizeStageLabel.textContent = 'Done!';
+            summarizePercentLbl.textContent = '100%';
+            setTimeout(() => { summarizeProgress.style.display = 'none'; }, 3000);
+          } else {
+            summarizeBar.style.background = '#e74c3c';
+            summarizeStageLabel.textContent = json.error || json.detail || 'Summarization failed';
+            setTimeout(() => { summarizeProgress.style.display = 'none'; }, 4000);
+            alert(json.error || json.detail || 'Summarization failed');
+          }
+        } catch (err) {
+          summarizeBar.style.background = '#e74c3c';
+          summarizeStageLabel.textContent = 'Error: ' + err.message;
+          setTimeout(() => { summarizeProgress.style.display = 'none'; }, 4000);
+          alert(err.message);
+        } finally {
+          clearInterval(summarizePoller);
+          summarizePoller = null;
+          summarizeBtn.innerHTML = 'Summarize Video';
+          summarizeBtn.disabled = false;
           submitBtn.disabled = false;
         }
       };
