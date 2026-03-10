@@ -61,8 +61,8 @@
 .profile-photo {
     float: right;
     margin: 0 0 2rem 2.5rem;
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height:300px;
     object-fit: cover;
     border-radius: 18px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
