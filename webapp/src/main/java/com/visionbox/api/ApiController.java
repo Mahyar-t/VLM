@@ -83,6 +83,86 @@ public class ApiController {
         }
     }
 
+    // ── Detect ───────────────────────────────────────────────────────────────
+
+    @PostMapping("/api/detect")
+    public ResponseEntity<?> detect(
+            @RequestParam("image") MultipartFile image,
+            @RequestParam(value = "model", defaultValue = "yolo11n.pt") String modelName,
+            @RequestParam(value = "threshold", defaultValue = "0.5") float threshold,
+            @RequestParam(value = "device", defaultValue = "cuda") String device) {
+        try {
+            String originalName = image.getOriginalFilename();
+            String suffix = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf('.'))
+                    : ".jpg";
+            Path tempImage = Files.createTempFile("detect_upload_", suffix);
+            image.transferTo(tempImage.toFile());
+
+            Map<String, Object> result = bridge.detect(
+                    tempImage.toAbsolutePath().toString(),
+                    modelName,
+                    threshold,
+                    device);
+
+            Files.deleteIfExists(tempImage);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("result", result);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/api/smart-detect")
+    public ResponseEntity<?> smartDetect(
+            @RequestParam("image") MultipartFile image,
+            @RequestParam("user_query") String userQuery,
+            @RequestParam(value = "threshold", defaultValue = "0.3") float threshold,
+            @RequestParam(value = "device", defaultValue = "cuda") String device) {
+        try {
+            String originalName = image.getOriginalFilename();
+            String suffix = (originalName != null && originalName.contains("."))
+                    ? originalName.substring(originalName.lastIndexOf('.'))
+                    : ".jpg";
+            Path tempImage = Files.createTempFile("smart_detect_upload_", suffix);
+            image.transferTo(tempImage.toFile());
+
+            Map<String, Object> result = bridge.smartDetect(
+                    tempImage.toAbsolutePath().toString(),
+                    userQuery,
+                    threshold,
+                    device);
+
+            Files.deleteIfExists(tempImage);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("status", "ok");
+            response.put("result", result);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
+    // ── Smart Detect Status ──────────────────────────────────────────────────
+
+    @GetMapping("/api/smart-detect-status")
+    public ResponseEntity<Map<String, Object>> smartDetectStatus() {
+        try {
+            Map<String, Object> status = bridge.smartDetectStatus();
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("stage", "error", "percent", 0, "label", e.getMessage()));
+        }
+    }
+
     // ── VQA ──────────────────────────────────────────────────────────────────
 
     @PostMapping("/api/vqa")
