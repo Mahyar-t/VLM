@@ -308,31 +308,26 @@
               </label>
               <label>
                 <div style="display: flex; align-items: center; gap: 6px">
-                  Aggregate Clips
+                  Key Scenes to Caption
                   <span
-                    title="Averages predictions (logits) across all sampled clips for a single, stable final prediction."
+                    title="Number of key scenes (clips) to extract and caption for the final video summary."
                     style="cursor: help; opacity: 0.7"
                     >&#9432;</span
                   >
                 </div>
-                <select id="aggregateSelect" style="margin-top: 8px">
-                  <option value="true" selected>Enabled</option>
-                  <option value="false">Disabled</option>
-                </select>
+                <input
+                  type="number"
+                  id="numScenesInput"
+                  value="3"
+                  min="1"
+                  max="10"
+                  style="margin-top: 8px"
+                />
               </label>
             </div>
 
             <!-- Submit buttons -->
             <div style="display: flex; gap: 10px">
-              <button
-                class="btn"
-                type="submit"
-                id="submitBtn"
-                disabled
-                style="flex: 1"
-              >
-                Classify Video
-              </button>
               <button
                 class="btn"
                 type="button"
@@ -398,16 +393,6 @@
               <div style="background:rgba(255,255,255,0.08); border-radius:99px; height:6px; overflow:hidden;">
                 <div id="summarizeProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg,#00f0ff,#0055ff); border-radius:99px; transition:width 0.4s ease;"></div>
               </div>
-            </div>
-
-            <!-- Results -->
-            <div
-              id="resultsContainer"
-              class="prediction-list"
-              style="display: none"
-            >
-              <h3 style="margin-top: 0; color: #fff">Top Predictions</h3>
-              <div id="predictionsList"></div>
             </div>
 
             <!-- Summary Results -->
@@ -488,10 +473,7 @@
       const playPauseBtn     = document.getElementById('playPauseBtn');
       const restartBtn       = document.getElementById('restartBtn');
       const form             = document.getElementById('videoForm');
-      const submitBtn        = document.getElementById('submitBtn');
       const summarizeBtn     = document.getElementById('summarizeBtn');
-      const resultsContainer = document.getElementById('resultsContainer');
-      const predictionsList  = document.getElementById('predictionsList');
       const summaryContainer = document.getElementById('summaryContainer');
       const summaryText      = document.getElementById('summaryText');
       const scenesList       = document.getElementById('scenesList');
@@ -500,10 +482,10 @@
       const deviceSelect     = document.getElementById('deviceSelect');
 
       // --- Load available V-JEPA models from server ---
-      async function loadAvailableModels() {
+      async function loadAvailableModels(retryCount = 0) {
         try {
           const res = await fetch('/api/video/models');
-          if (!res.ok) throw new Error('Failed to fetch models');
+          if (!res.ok) throw new Error('HTTP ' + res.status);
           const data = await res.json();
           modelSelect.innerHTML = '';
           if (data.models && data.models.length > 0) {
@@ -515,18 +497,27 @@
               modelSelect.appendChild(opt);
             });
           } else {
+            // Server responded but no local models found — use HF fallback
             const opt = document.createElement('option');
             opt.value = 'facebook/vjepa2-vitl-fpc16-256-ssv2';
             opt.textContent = 'V-JEPA 2 ViT-L (HuggingFace)';
             opt.selected = true;
             modelSelect.appendChild(opt);
           }
+          // Trigger preload AFTER dropdown is populated so modelSelect.value is set
+          triggerPreload();
         } catch (e) {
-          modelSelect.innerHTML = '<option value="facebook/vjepa2-vitl-fpc16-256-ssv2" selected>V-JEPA 2 ViT-L (HuggingFace)</option>';
-          console.warn('Could not load model list:', e);
+          if (retryCount < 10) {
+            // Python backend isn't ready yet — retry after 2.5 s
+            console.warn(`loadAvailableModels: attempt ${retryCount + 1} failed (${e.message}), retrying in 2.5s...`);
+            setTimeout(() => loadAvailableModels(retryCount + 1), 2500);
+          } else {
+            // Give up after 10 attempts, set HF fallback and preload
+            console.warn('loadAvailableModels: giving up, using HF fallback');
+            modelSelect.innerHTML = '<option value="facebook/vjepa2-vitl-fpc16-256-ssv2" selected>V-JEPA 2 ViT-L (HuggingFace)</option>';
+            triggerPreload();
+          }
         }
-        // Trigger preload AFTER dropdown is populated so modelSelect.value is set
-        triggerPreload();
       }
 
 
@@ -614,8 +605,6 @@
           if (res.ok) {
             freeMemBtn.innerHTML = '✅ Done';
             document.getElementById('loadProgressContainer').style.display = 'none';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Classify Video';
             summarizeBtn.disabled = false;
             summarizeBtn.innerHTML = 'Summarize Video';
             setTimeout(() => { freeMemBtn.innerHTML = original; freeMemBtn.disabled = false; }, 2000);
@@ -643,8 +632,8 @@
           return;
         }
 
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner"></span> Loading Model...';
+        summarizeBtn.disabled = true;
+        summarizeBtn.innerHTML = '<span class="spinner"></span> Loading Model...';
 
         const progressContainer = document.getElementById('loadProgressContainer');
         const progressBar       = document.getElementById('loadProgressBar');
@@ -681,16 +670,14 @@
               stageLabel.textContent = `Ready! (${elapsed}s)`;
               percentLabel.textContent = '100%';
               setTimeout(() => { progressContainer.style.display = 'none'; }, 3000);
-              submitBtn.innerHTML = 'Classify Video';
-              submitBtn.disabled = false;
+              summarizeBtn.innerHTML = 'Summarize Video';
               summarizeBtn.disabled = false;
             } else if (status.stage === 'error') {
               clearInterval(preloadPoller);
               progressBar.style.background = '#e74c3c';
               stageLabel.textContent = `Load failed — press reset to retry`;
               percentLabel.textContent = '';
-              submitBtn.innerHTML = 'Classify Video';
-              submitBtn.disabled = false;
+              summarizeBtn.innerHTML = 'Summarize Video';
               summarizeBtn.disabled = false;
             } else {
               stageLabel.textContent = `${status.label} (${elapsed}s)`;
@@ -706,53 +693,6 @@
       // Re-trigger when model or device selection changes
       modelSelect.addEventListener('change', triggerPreload);
       deviceSelect.addEventListener('change', triggerPreload);
-
-      // --- Video classification ---
-      form.onsubmit = async (e) => {
-        e.preventDefault();
-        if (!fileInput.files.length) return alert('Select a video first');
-
-        submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
-        submitBtn.disabled = true;
-        summarizeBtn.disabled = true;
-        resultsContainer.style.display = 'none';
-
-        try {
-          const formData = new FormData();
-          formData.append('video', fileInput.files[0]);
-          formData.append('model', modelSelect.value);
-          formData.append('device', deviceSelect.value);
-          formData.append('clip_len', document.getElementById('clipLenInput').value);
-          formData.append('use_adaptive_step', document.getElementById('adaptiveStepSelect').value);
-          formData.append('use_overlap', document.getElementById('overlapSelect').value);
-          formData.append('aggregate_clips', document.getElementById('aggregateSelect').value);
-
-          const response = await fetch('/api/video/classify', {
-            method: 'POST',
-            body: formData
-          });
-          const json = await response.json();
-
-          if (response.ok && json.predictions) {
-            predictionsList.innerHTML = '';
-            json.predictions.forEach(p => {
-              const item = document.createElement('div');
-              item.className = 'pred-item';
-              item.innerHTML = `<span class="pred-class">${p.class}</span><span class="pred-prob">${(p.probability * 100).toFixed(1)}%</span>`;
-              predictionsList.appendChild(item);
-            });
-            resultsContainer.style.display = 'block';
-          } else {
-            alert(json.error || json.detail || 'Classification failed');
-          }
-        } catch (err) {
-          alert(err.message);
-        } finally {
-          submitBtn.innerHTML = 'Classify Video';
-          submitBtn.disabled = false;
-          summarizeBtn.disabled = false;
-        }
-      };
 
       // --- Video Summarization ---
       const summarizeProgress    = document.getElementById('summarizeProgressContainer');
@@ -782,7 +722,6 @@
 
         summarizeBtn.innerHTML = '<span class="spinner"></span> Summarizing...';
         summarizeBtn.disabled = true;
-        submitBtn.disabled = true;
         summaryContainer.style.display = 'none';
 
         // Show summarize progress bar
@@ -799,8 +738,9 @@
           formData.append('vjepa_model', modelSelect.value);
           formData.append('vjepa_device', deviceSelect.value);
           formData.append('qwen_device', deviceSelect.value);
-          formData.append('clip_len', document.getElementById('clipLenInput').value);
-          formData.append('k_clips', 3);
+          const clipLen = document.getElementById('clipLenInput').value;
+          formData.append('clip_len', clipLen);
+          formData.append('k_clips', document.getElementById('numScenesInput').value);
 
           const response = await fetch('/api/video/summarize', {
             method: 'POST',
@@ -813,6 +753,15 @@
 
             scenesList.innerHTML = '';
             if (json.result.scenes && json.result.scenes.length > 0) {
+              const numScenes = json.result.scenes.length;
+              const totalFrames = numScenes * clipLen;
+              
+              const statsLi = document.createElement('li');
+              statsLi.innerHTML = `<strong>Stats:</strong> Generated from ${numScenes} key scenes (Total ${totalFrames} frames analyzed).`;
+              statsLi.style.marginBottom = '12px';
+              statsLi.style.color = '#00f0ff';
+              scenesList.appendChild(statsLi);
+
               json.result.scenes.forEach(scene => {
                 const li = document.createElement('li');
                 li.textContent = scene;
@@ -842,7 +791,6 @@
           summarizePoller = null;
           summarizeBtn.innerHTML = 'Summarize Video';
           summarizeBtn.disabled = false;
-          submitBtn.disabled = false;
         }
       };
     </script>
