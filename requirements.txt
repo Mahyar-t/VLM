@@ -11,3 +11,4 @@ ultralytics
 qwen-vl-utils
 bitsandbytes
 accelerate
+av

@@ -416,6 +416,37 @@ public class PythonBridge {
         return mapper.readValue(response.body(), Map.class);
     }
 
+    // ── video ──────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> videoClassify(String videoPath, String model, String device) throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        // Use same encoding function as images (it just base64 encodes the file)
+        payload.put("video_base64", encodeImageFile(videoPath));
+        if (model != null && !model.isBlank()) {
+            payload.put("model_name", model);
+        }
+        if (device != null && !device.isBlank()) {
+            payload.put("device", device);
+        }
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/classify"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(10))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+        return (List<Map<String, Object>>) respMap.get("predictions");
+    }
+
     // ── internal ─────────────────────────────────────────────────────────────
 
     private String resolveScriptPath(String scriptName) {

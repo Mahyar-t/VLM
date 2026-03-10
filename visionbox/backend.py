@@ -229,6 +229,30 @@ def load_sam_model(model_name: str, device: str):
         loading_states[state_key] = "done"
     return models[key]
 
+def load_vjepa_model(model_name: str, device: str):
+    key = f"vjepa_{model_name}_{device}"
+    state_key = f"{model_name}::{device}"
+    if key not in models:
+        clear_other_models(key)
+        print(f"Loading V-JEPA model {model_name} into VRAM...")
+        dev = get_device(device)
+        loading_states[state_key] = "loading_processor"
+        from transformers import VJEPA2VideoProcessor, VJEPA2ForVideoClassification
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            # Fallback to general processor if video processor is not explicitly mapped for this ID
+            try:
+                processor = VJEPA2VideoProcessor.from_pretrained(model_name)
+            except Exception:
+                from transformers import AutoProcessor
+                processor = AutoProcessor.from_pretrained(model_name)
+            loading_states[state_key] = "loading_model"
+            model = VJEPA2ForVideoClassification.from_pretrained(model_name, torch_dtype=torch.float16)
+            loading_states[state_key] = "moving_to_device"
+            model = model.to(dev)
+            models[key] = (processor, model)
+        loading_states[state_key] = "done"
+    return models[key]
+
 from pydantic import BaseModel
 
 class CaptionRequest(BaseModel):
@@ -243,6 +267,11 @@ class VQARequest(BaseModel):
     image_base64: str
     question: str
     model_name: str = "Salesforce/blip-vqa-base"
+    device: str = "cuda"
+
+class VideoClassifyRequest(BaseModel):
+    video_base64: str
+    model_name: str = "facebook/vjepa2-vitl-fpc16-256-ssv2"
     device: str = "cuda"
 
 # State for Smart Detection progress
@@ -494,6 +523,75 @@ async def predict_image(req: PredictRequest):
         
         return {"predictions": out}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/video/classify")
+async def classify_video(req: VideoClassifyRequest):
+    try:
+        contents = base64.b64decode(req.video_base64)
+        
+        import tempfile
+        import numpy as np
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+            
+        try:
+            import av
+            container = av.open(tmp_path)
+            
+            # Extract 16 frames uniformly
+            total_frames = container.streams.video[0].frames
+            if total_frames <= 0:
+                # If we can't reliably read total_frames from metadata, decode all and pick 16
+                all_frames = []
+                for frame in container.decode(video=0):
+                    all_frames.append(frame.to_rgb().to_ndarray())
+                if not all_frames:
+                    raise ValueError("Could not extract frames from video")
+                indices = np.linspace(0, len(all_frames) - 1, num=min(16, len(all_frames)), dtype=int)
+                frames = [all_frames[i] for i in indices]
+            else:
+                indices = np.linspace(0, total_frames - 1, num=min(16, total_frames), dtype=int)
+                frames = []
+                for i, frame in enumerate(container.decode(video=0)):
+                    if i in indices:
+                        frames.append(frame.to_rgb().to_ndarray())
+                    if len(frames) == 16:
+                        break
+            
+            # Not enough frames fallback
+            while len(frames) < 16 and len(frames) > 0:
+                frames.append(frames[-1])
+                
+        finally:
+            os.remove(tmp_path)
+            
+        if not frames:
+            raise ValueError("Could not extract frames from video")
+
+        dev = get_device(req.device)
+        processor, model = await asyncio.to_thread(load_vjepa_model, req.model_name, req.device)
+        
+        inputs = processor(list(frames), return_tensors="pt")
+        inputs = {k: v.to(dev) for k, v in inputs.items() if hasattr(v, "to")}
+        
+        with torch.no_grad():
+            outputs = model(**inputs)
+            
+        logits = outputs.logits
+        probs = logits.softmax(dim=-1).squeeze(0)
+        
+        top_probs, top_idx = probs.topk(5)
+        
+        classes = model.config.id2label
+        out = [{"class": classes[int(i)], "probability": float(p)} for p, i in zip(top_probs.cpu(), top_idx.cpu())]
+        
+        return {"predictions": out}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/detect")

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NiluLab API - Video Analysis</title>
+    <link rel="icon" type="image/png" href="/images/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/caption.css" />
+    <style>
+      .video-preview {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 8px;
+        display: none;
+      }
+      .prediction-list {
+        margin-top: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .pred-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 4px;
+      }
+      .pred-item:last-child {
+        margin-bottom: 0;
+      }
+      .pred-class {
+        font-weight: 500;
+        color: var(--primary);
+      }
+      .pred-prob {
+        color: #ccc;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="sidebar-placeholder"></div>
+
+    <div class="main-wrapper">
+      <div class="container">
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 1.5rem;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 15px">
+              <h2 style="margin: 0">Video Analysis</h2>
+              <div
+                id="vramDisplay"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  background: rgba(255, 255, 255, 0.05);
+                  padding: 5px 12px;
+                  border-radius: 20px;
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  font-size: 0.8rem;
+                  color: rgba(255, 255, 255, 0.7);
+                  font-weight: 500;
+                "
+              >
+                <span
+                  style="
+                    width: 8px;
+                    height: 8px;
+                    background: #2ecc71;
+                    border-radius: 50%;
+                    display: inline-block;
+                    box-shadow: 0 0 8px #2ecc71;
+                  "
+                ></span>
+                GPU READY:
+                <span id="vramValue" style="color: var(--primary)"
+                  >-- / -- MB</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <form id="videoForm">
+            <div class="drop-zone" id="dropZone">
+              <p>Drag & drop or click to upload video (MP4)</p>
+              <div class="preview-container" id="previewContainer">
+                <video id="previewVideo" controls class="video-preview"></video>
+                <button
+                  type="button"
+                  style="
+                    position: absolute;
+                    top: 15px;
+                    right: 15px;
+                    background: var(--dark);
+                    color: #fff;
+                    border: none;
+                    padding: 10px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    z-index: 20;
+                    display: none;
+                  "
+                  id="removeVideoBtn"
+                >
+                  REMOVE
+                </button>
+              </div>
+            </div>
+            <input
+              type="file"
+              id="videoInput"
+              name="video"
+              accept="video/mp4,video/x-m4v,video/*,video/webm"
+              style="display: none"
+            />
+
+            <div class="form-grid" style="margin-top: 20px">
+              <label
+                >V-JEPA Model
+                <select name="model_name" id="modelSelect">
+                  <option value="facebook/vjepa2-vitl-fpc16-256-ssv2" selected>
+                    ViT-L [~300M] (256 frames, Something-Something V2)
+                  </option>
+                </select>
+              </label>
+              <label
+                >Device
+                <select name="device">
+                  <option value="cpu">CPU</option>
+                  <option value="cuda" selected>CUDA</option>
+                </select>
+              </label>
+            </div>
+
+            <button class="btn" type="submit" id="submitBtn">
+              Classify Video
+            </button>
+
+            <div
+              id="resultsContainer"
+              class="prediction-list"
+              style="display: none"
+            >
+              <h3 style="margin-top: 0; color: #fff">Top Predictions</h3>
+              <div id="predictionsList"></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById("videoInput");
+      const dropZone = document.getElementById("dropZone");
+      const previewContainer = document.getElementById("previewContainer");
+      const previewVideo = document.getElementById("previewVideo");
+      const removeVideoBtn = document.getElementById("removeVideoBtn");
+      const form = document.getElementById("videoForm");
+      const submitBtn = document.getElementById("submitBtn");
+      const resultsContainer = document.getElementById("resultsContainer");
+      const predictionsList = document.getElementById("predictionsList");
+
+      // --- VRAM Display Logic ---
+      const vramValue = document.getElementById("vramValue");
+      async function updateVramDisplay() {
+        try {
+          const res = await fetch("/api/gpu-stats");
+          const stats = await res.json();
+          if (stats.error) {
+            vramValue.textContent = "N/A";
+          } else {
+            vramValue.textContent = `${Math.round(stats.used)} / ${Math.round(stats.total)} MB`;
+            const pct = (stats.used / stats.total) * 100;
+            const dot = vramValue.previousElementSibling;
+            if (pct > 90) {
+              dot.style.background = "#e74c3c";
+              dot.style.boxShadow = "0 0 8px #e74c3c";
+            } else if (pct > 70) {
+              dot.style.background = "#f1c40f";
+              dot.style.boxShadow = "0 0 8px #f1c40f";
+            } else {
+              dot.style.background = "#2ecc71";
+              dot.style.boxShadow = "0 0 8px #2ecc71";
+            }
+          }
+        } catch (e) {
+          vramValue.textContent = "Error";
+        }
+      }
+      setInterval(updateVramDisplay, 5000);
+      updateVramDisplay();
+
+      dropZone.onclick = (e) => {
+        if (e.target !== removeVideoBtn) fileInput.click();
+      };
+
+      fileInput.onchange = () => {
+        if (fileInput.files[0]) showPreview(fileInput.files[0]);
+      };
+
+      removeVideoBtn.onclick = (e) => {
+        e.stopPropagation();
+        fileInput.value = "";
+        previewVideo.style.display = "none";
+        previewVideo.src = "";
+        removeVideoBtn.style.display = "none";
+        dropZone.querySelector("p").style.display = "block";
+        resultsContainer.style.display = "none";
+      };
+
+      function showPreview(file) {
+        const url = URL.createObjectURL(file);
+        previewVideo.src = url;
+        previewVideo.style.display = "block";
+        removeVideoBtn.style.display = "block";
+        dropZone.querySelector("p").style.display = "none";
+        resultsContainer.style.display = "none";
+      }
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        if (!fileInput.files.length) return alert("Select a video first");
+
+        submitBtn.innerHTML = '<span class="spinner"></span> Processing...';
+        submitBtn.disabled = true;
+        resultsContainer.style.display = "none";
+
+        try {
+          const formData = new FormData();
+          formData.append("video", fileInput.files[0]);
+          formData.append(
+            "model",
+            document.getElementById("modelSelect").value,
+          );
+          formData.append(
+            "device",
+            form.querySelector('[name="device"]').value,
+          );
+
+          const res = await fetch("/api/video/classify", {
+            method: "POST",
+            body: formData,
+          });
+          const json = await res.json();
+
+          if (res.ok && json.predictions) {
+            predictionsList.innerHTML = "";
+            json.predictions.forEach((p) => {
+              const item = document.createElement("div");
+              item.className = "pred-item";
+              item.innerHTML = `
+                            <span class="pred-class">${p.class}</span>
+                            <span class="pred-prob">${(p.probability * 100).toFixed(1)}%</span>
+                        `;
+              predictionsList.appendChild(item);
+            });
+            resultsContainer.style.display = "block";
+          } else {
+            alert(json.error || "Classification failed");
+          }
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          submitBtn.innerHTML = "Classify Video";
+          submitBtn.disabled = false;
+        }
+      };
+    </script>
+    <script src="/js/transition.js"></script>
+    <script src="/js/common.js"></script>
+  </body>
+</html>
