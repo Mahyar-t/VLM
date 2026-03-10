@@ -1,6 +1,6 @@
 # NiluLab 🪷
 
-NiluLab is a modern Computer Vision platform that provides a beautiful web interface and a robust Python API for interacting with state-of-the-art models. Features include **Image Captioning (with Multimodal LLMs)**, **Visual Question Answering (VQA)**, **Smart Object Detection**, and **Image Classification**.
+NiluLab is a Computer Vision platform that provides a practical web interface and a Python API for interacting with state-of-the-art models. Features include **Image Captioning (with Multimodal LLMs)**, **Visual Question Answering (VQA)**, **Smart Object Detection**, and **Image Classification**.
 
 ---
 
@@ -29,7 +29,7 @@ The easiest way to get NiluLab up and running is using Docker. This handles all 
 
 ---
 
-## 💻 Manual Installation
+## Manual Installation
 
 ### 1. Prerequisites
 
@@ -88,7 +88,7 @@ java -jar target/visionbox-api-0.1.0.jar
 
 ---
 
-## 🧠 Model Configuration: Qwen 2.5-VL
+## Model Configuration: Qwen 2.5-VL
 
 The Image Captioning feature uses **Qwen2.5-VL-3B-Instruct**. The app will automatically download it if not found, but we recommend manual placement for a smoother experience.
 
@@ -110,7 +110,7 @@ VLM/
 
 ---
 
-## 🛠️ CLI Tools
+## CLI Tools
 
 NiluLab also provides CLI tools for specific tasks:
 
@@ -120,7 +120,7 @@ NiluLab also provides CLI tools for specific tasks:
 
 ---
 
-## ⚠️ Troubleshooting & VRAM
+## Troubleshooting & VRAM
 
 - **Out of Memory (OOM)**: Large models stay cached in VRAM for speed. If you run out of memory, click the red **`Reset the cache models`** button in the UI.
 - **VRAM Monitor**: Check the real-time VRAM usage pill at the top of the Image Captioning page.
