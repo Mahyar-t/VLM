@@ -44,8 +44,15 @@ If you don't have a local GPU, you can run NiluLab for free using Google Colab a
 !python3 scripts/colab_setup.py --token YOUR_NGROK_AUTHTOKEN --port 8080
 ```
 
+### 💎 Persistence & Secrets (One-Click Launch)
+
+To avoid re-entering your token or re-downloading large models:
+
+1.  **Secrets**: Click the 🔑 icon in Colab and add `NGROK_TOKEN`. Enable "Notebook access".
+2.  **Google Drive**: Use the provided `NiluLab_Colab.ipynb` which automatically mounts Drive and skips setup if files already exist.
+
 > [!TIP]
-> You can change the `--port` argument if you need to run on a different port than `8080`.
+> Persistent mode stores models on your Google Drive, so you only download them once!
 
 ---
 
