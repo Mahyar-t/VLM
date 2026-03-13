@@ -101,4 +101,5 @@ def extract_video_embeddings(
     if progress_fn:
         progress_fn("Embeddings extracted — selecting key scenes...", 50)
 
-    return clips, embeddings_tensor
+    # Return model too so callers can access config without reloading
+    return clips, embeddings_tensor, model

@@ -407,6 +407,16 @@ public class ApiController {
         }
     }
 
+    @GetMapping("/api/video/summarize-status")
+    public ResponseEntity<?> videoSummarizeStatus() {
+        try {
+            Map<String, Object> result = bridge.getSummarizeStatus();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("stage", "idle", "percent", 0, "label", "Waiting..."));
+        }
+    }
+
     // ── Video Models Listing ──────────────────────────────────────────────────
 
     @GetMapping("/api/video/models")
@@ -417,6 +427,42 @@ public class ApiController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(
                     Map.of("status", "error", "error", e.getMessage()));
+        }
+    }
+
+    // ── Event Narration ──────────────────────────────────────────────────────
+
+    @PostMapping("/api/video/narrate")
+    public ResponseEntity<?> narrateVideo(
+            @RequestParam("video") MultipartFile video,
+            @RequestParam(value = "vjepa_model", defaultValue = "") String vjepaModel,
+            @RequestParam(value = "vjepa_device", defaultValue = "cuda") String vjepaDevice,
+            @RequestParam(value = "clip_len", defaultValue = "64") int clipLen,
+            @RequestParam(value = "sensitivity", defaultValue = "1.5") float sensitivity,
+            @RequestParam(value = "cooldown", defaultValue = "2") int cooldown,
+            @RequestParam(value = "merge_gap", defaultValue = "3") int mergeGap) {
+
+        try {
+            byte[] bytes = video.getBytes();
+            String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
+
+            Map<String, Object> result = bridge.narrateVideo(
+                    base64, vjepaModel, vjepaDevice, clipLen, sensitivity, cooldown, mergeGap);
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/api/video/narrate-status")
+    public ResponseEntity<?> videoNarrateStatus() {
+        try {
+            Map<String, Object> result = bridge.getNarrateStatus();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("stage", "idle", "percent", 0, "label", "Waiting..."));
         }
     }
 }

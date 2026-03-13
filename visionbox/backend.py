@@ -59,9 +59,21 @@ import gc
 def clear_other_models(key_to_keep: str):
     """
     Clears all models from VRAM except `key_to_keep` and the small CLIP model.
-    This prevents OOM errors when switching between large models on 8GB GPUs.
+    Allows V-JEPA and Qwen to coexist since they fit in 8GB VRAM together.
     """
-    keys_to_delete = [k for k in models.keys() if k != key_to_keep and not k.startswith("clip_")]
+    keys_to_delete = []
+    for k in models.keys():
+        if k == key_to_keep or k.startswith("clip_"):
+            continue
+            
+        # Allow Qwen and V-JEPA to coexist
+        if "Qwen" in key_to_keep and k.startswith("vjepa_"):
+            continue
+        if key_to_keep.startswith("vjepa_") and "Qwen" in k:
+            continue
+            
+        keys_to_delete.append(k)
+        
     if keys_to_delete:
         for k in keys_to_delete:
             print(f"Clearing {k} from VRAM to free space...")
@@ -297,11 +309,24 @@ class VideoSummarizeRequest(BaseModel):
     # Qwen settings
     qwen_device: str = "cuda"
 
+class VideoNarrateRequest(BaseModel):
+    video_base64: str
+    vjepa_model_name: str = "facebook/vjepa2-vitl-fpc16-256-ssv2"
+    vjepa_device: str = "cuda"
+    qwen_device: str = "cuda"
+    clip_len: int = 64
+    sensitivity: float = 0.8
+    cooldown: int = 1
+    merge_gap: int = 3
+
 # State for Smart Detection progress
 smart_detect_state = {}
 
 # State for Video Summarization progress
 summarize_state: dict = {}
+
+# State for Event Narration progress
+narrate_state: dict = {}
 
 class PredictRequest(BaseModel):
     image_base64: str
@@ -665,6 +690,67 @@ async def summarize_video_status():
     if not summarize_state:
         return {"stage": "idle", "percent": 0, "label": "Waiting..."}
     return summarize_state
+
+@app.post("/api/video/narrate")
+async def narrate_video_endpoint(req: VideoNarrateRequest):
+    """
+    Event-driven video narration:
+    V-JEPA 2 detects WHEN → Qwen2.5-VL describes WHAT.
+    """
+    import tempfile
+    from visionbox.video_analyzer.caption_pipeline import narrate_video
+
+    narrate_state.clear()
+    narrate_state["stage"] = "starting"
+    narrate_state["label"] = "Starting event narration pipeline..."
+    narrate_state["percent"] = 0
+
+    def _progress(label: str, pct: int):
+        narrate_state["label"] = label
+        narrate_state["percent"] = pct
+
+    try:
+        contents = base64.b64decode(req.video_base64)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        try:
+            result = await asyncio.to_thread(
+                narrate_video,
+                video_path=tmp_path,
+                vjepa_model_name=req.vjepa_model_name,
+                vjepa_device=req.vjepa_device,
+                load_vjepa_fn=load_vjepa_model,
+                load_qwen_fn=load_qwen_caption_model,
+                get_device_fn=get_device,
+                qwen_device=req.qwen_device,
+                clip_len=req.clip_len,
+                sensitivity=req.sensitivity,
+                cooldown=req.cooldown,
+                merge_gap=req.merge_gap,
+                progress_fn=_progress,
+            )
+        finally:
+            os.remove(tmp_path)
+
+        narrate_state["stage"] = "done"
+        narrate_state["label"] = "Done!"
+        narrate_state["percent"] = 100
+        return {"result": result}
+    except Exception as e:
+        narrate_state["stage"] = "error"
+        narrate_state["label"] = str(e)
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/video/narrate-status")
+async def narrate_video_status():
+    """Returns the current progress status of the active narration."""
+    if not narrate_state:
+        return {"stage": "idle", "percent": 0, "label": "Waiting..."}
+    return narrate_state
 
 @app.post("/api/detect")
 async def detect_objects(req: DetectRequest):

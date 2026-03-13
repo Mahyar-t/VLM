@@ -500,6 +500,69 @@ public class PythonBridge {
         return mapper.readValue(response.body(), Map.class);
     }
 
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getSummarizeStatus() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/summarize-status"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            return Map.of("stage", "idle", "percent", 0, "label", "Waiting...");
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> narrateVideo(String videoBase64, String vjepaModel, String vjepaDevice,
+            int clipLen, float sensitivity, int cooldown, int mergeGap) throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("video_base64", videoBase64);
+        if (vjepaModel != null && !vjepaModel.isBlank()) {
+            payload.put("vjepa_model_name", vjepaModel);
+        }
+        if (vjepaDevice != null && !vjepaDevice.isBlank()) {
+            payload.put("vjepa_device", vjepaDevice);
+        }
+        payload.put("clip_len", clipLen);
+        payload.put("sensitivity", sensitivity);
+        payload.put("cooldown", cooldown);
+        payload.put("merge_gap", mergeGap);
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/narrate"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(10))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getNarrateStatus() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/narrate-status"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            return Map.of("stage", "idle", "percent", 0, "label", "Waiting...");
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
+
     private String resolveScriptPath(String scriptName) {
         if (!pythonExec.contains("/") && !pythonExec.contains("\\")) {
             return scriptName; // system path fallback

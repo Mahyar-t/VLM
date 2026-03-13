@@ -37,8 +37,8 @@ def generate_video_summary(
 
     _progress("Extracting V-JEPA embeddings from video clips...", 5)
 
-    # 1. Extract embeddings
-    clips, embeddings = extract_video_embeddings(
+    # 1. Extract embeddings (returns model object too — avoids a second load call)
+    clips, embeddings, _ = extract_video_embeddings(
         video_path=video_path,
         model_name=vjepa_model_name,
         device=vjepa_device,
@@ -140,3 +140,124 @@ def generate_video_summary(
         "scenes": captions,
         "summary": final_summary
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Event-Driven Narration Pipeline
+#   V-JEPA 2 decides WHEN → Qwen2.5-VL describes WHAT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def narrate_video(
+    video_path: str,
+    vjepa_model_name: str,
+    vjepa_device: str,
+    load_vjepa_fn: Callable,
+    load_qwen_fn: Callable,
+    get_device_fn: Callable,
+    qwen_device: str = "cuda",
+    clip_len: int = 64,
+    sensitivity: float = 0.8,
+    cooldown: int = 1,
+    merge_gap: int = 3,
+    progress_fn: Optional[Callable[[str, int], None]] = None,
+) -> Dict[str, Any]:
+    """
+    Event-driven video narration.
+
+    Pipeline:
+        1. Extract V-JEPA embeddings (reuses embed.py)
+        2. Detect latent changes (cosine distance + adaptive threshold)
+        3. Segment into event windows
+        4. Build structured descriptors
+        5. Load Qwen2.5-VL and caption only at event triggers
+
+    Returns:
+        {
+            "events":       ["Opening: ...", "Event 1: ...", ...],
+            "summary":      "Full chronological narration",
+            "event_count":  int,
+            "total_clips":  int,
+        }
+    """
+    from .latent_change_detector import detect_latent_changes
+    from .event_segmenter import segment_events
+    from .event_head import describe_event
+    from .narration_decoder import narrate_events
+
+    def _progress(stage: str, pct: int):
+        logger.info("[NARRATE %d%%] %s", pct, stage)
+        if progress_fn:
+            progress_fn(stage, pct)
+
+    # 1. Extract embeddings (also returns the loaded model to avoid a second load)
+    clips, embeddings, vjepa_model = extract_video_embeddings(
+        video_path=video_path,
+        model_name=vjepa_model_name,
+        device=vjepa_device,
+        load_model_fn=load_vjepa_fn,
+        get_device_fn=get_device_fn,
+        clip_len=clip_len,
+        progress_fn=_progress,
+    )
+
+    total_clips = len(clips)
+
+    # ── 2. Detect latent changes ─────────────────────────────────────────────
+    _progress("Detecting latent scene changes...", 55)
+
+    change_points, distances = detect_latent_changes(
+        embeddings,
+        sensitivity=sensitivity,
+        cooldown=cooldown,
+    )
+
+    _progress(f"Detected {len(change_points)} change point(s) — segmenting events...", 65)
+
+    # ── 3. Segment into events ───────────────────────────────────────────────
+    events = segment_events(
+        change_points=change_points,
+        distances=distances,
+        total_clips=total_clips,
+        merge_gap=merge_gap,
+    )
+
+    _progress(f"Segmented into {len(events)} event(s) — building descriptors...", 75)
+
+    # ── 4. Get id2label from already-loaded model — no second load needed ────
+    id2label = getattr(vjepa_model.config, "id2label", {})
+
+    descriptors = []
+    for event in events:
+        desc = describe_event(
+            embeddings=embeddings,
+            start_idx=event.start_idx,
+            end_idx=event.end_idx,
+            trigger_idx=event.trigger_idx,
+            event_id=event.event_id,
+            id2label=id2label,
+            is_opening=(event.event_id == 0),
+        )
+        descriptors.append(desc)
+
+    # ── 5. Free V-JEPA from VRAM before loading Qwen ─────────────────────────
+    # We must delete the local reference so `clear_other_models` can gc it.
+    del vjepa_model
+    
+    _progress("Loading Qwen2.5-VL for event captioning...", 82)
+    qwen_processor, qwen_model = load_qwen_fn(qwen_device, "4")
+
+    result = narrate_events(
+        descriptors=descriptors,
+        clips=clips,
+        qwen_processor=qwen_processor,
+        qwen_model=qwen_model,
+        qwen_device=qwen_device,
+        total_clips=total_clips,
+        progress_fn=_progress,
+    )
+    result["total_clips"] = total_clips
+
+    _progress("Done!", 100)
+
+    return result
+
