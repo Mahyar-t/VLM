@@ -208,4 +208,6 @@ webapp/yolo11l.pt
 # Large V-JEPA2 model weights
 V_JEPA2/V-JEPA2-ViT-G-fpc32-1B/model.safetensors
 V_JEPA2/V-JEPA2-ViT-L-fpc16-300M/model.safetensors
+V_JEPA2/V-JEPA2-ViT-G-fpc64-1B/model.safetensors    
+
 
