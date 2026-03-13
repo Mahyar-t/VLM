@@ -416,7 +416,152 @@ public class PythonBridge {
         return mapper.readValue(response.body(), Map.class);
     }
 
-    // ── internal ─────────────────────────────────────────────────────────────
+    // ── video ──────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> videoClassify(String videoPath, String model, String device,
+            int clipLen, boolean adaptiveStep, boolean overlap, boolean aggregate) throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("video_base64", encodeImageFile(videoPath));
+        if (model != null && !model.isBlank()) {
+            payload.put("model_name", model);
+        }
+        if (device != null && !device.isBlank()) {
+            payload.put("device", device);
+        }
+        payload.put("clip_len", clipLen);
+        payload.put("use_adaptive_step", adaptiveStep);
+        payload.put("use_overlap", overlap);
+        payload.put("aggregate_clips", aggregate);
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/classify"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(10))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        Map<String, Object> respMap = mapper.readValue(response.body(), Map.class);
+        return (List<Map<String, Object>>) respMap.get("predictions");
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> summarizeVideo(String videoPath, String vjepaModel, String vjepaDevice,
+            String qwenDevice, int clipLen, int kClips) throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("video_base64", encodeImageFile(videoPath));
+        if (vjepaModel != null && !vjepaModel.isBlank()) {
+            payload.put("vjepa_model_name", vjepaModel);
+        }
+        if (vjepaDevice != null && !vjepaDevice.isBlank()) {
+            payload.put("vjepa_device", vjepaDevice);
+        }
+        if (qwenDevice != null && !qwenDevice.isBlank()) {
+            payload.put("qwen_device", qwenDevice);
+        }
+        payload.put("clip_len", clipLen);
+        payload.put("k_clips", kClips);
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/summarize"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(15)) // Summarization can take longer
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+
+        return mapper.readValue(response.body(), Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> listVideoModels() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/available-models"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getSummarizeStatus() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/summarize-status"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            return Map.of("stage", "idle", "percent", 0, "label", "Waiting...");
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> narrateVideo(String videoBase64, String vjepaModel, String vjepaDevice,
+            int clipLen, float sensitivity, int cooldown, int mergeGap) throws Exception {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("video_base64", videoBase64);
+        if (vjepaModel != null && !vjepaModel.isBlank()) {
+            payload.put("vjepa_model_name", vjepaModel);
+        }
+        if (vjepaDevice != null && !vjepaDevice.isBlank()) {
+            payload.put("vjepa_device", vjepaDevice);
+        }
+        payload.put("clip_len", clipLen);
+        payload.put("sensitivity", sensitivity);
+        payload.put("cooldown", cooldown);
+        payload.put("merge_gap", mergeGap);
+
+        String jsonBytes = mapper.writeValueAsString(payload);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/narrate"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofMinutes(10))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBytes))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Python server error: " + response.body());
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getNarrateStatus() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(serverUrl + "/video/narrate-status"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            return Map.of("stage", "idle", "percent", 0, "label", "Waiting...");
+        }
+        return mapper.readValue(response.body(), Map.class);
+    }
 
     private String resolveScriptPath(String scriptName) {
         if (!pythonExec.contains("/") && !pythonExec.contains("\\")) {

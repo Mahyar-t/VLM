@@ -60,6 +60,7 @@ cover/
 *.jpg
 *.png
 *.jpeg
+*.mp4
 
 !webapp/src/main/resources/static/images/hero-bg.jpg
 !webapp/src/main/resources/static/images/logo.png
@@ -203,3 +204,10 @@ webapp/yolo11n.pt
 webapp/yolo11s.pt
 webapp/yolo11m.pt
 webapp/yolo11l.pt
+
+# Large V-JEPA2 model weights
+V_JEPA2/V-JEPA2-ViT-G-fpc32-1B/model.safetensors
+V_JEPA2/V-JEPA2-ViT-L-fpc16-300M/model.safetensors
+V_JEPA2/V-JEPA2-ViT-G-fpc64-1B/model.safetensors    
+
+

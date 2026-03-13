@@ -59,9 +59,21 @@ import gc
 def clear_other_models(key_to_keep: str):
     """
     Clears all models from VRAM except `key_to_keep` and the small CLIP model.
-    This prevents OOM errors when switching between large models on 8GB GPUs.
+    Allows V-JEPA and Qwen to coexist since they fit in 8GB VRAM together.
     """
-    keys_to_delete = [k for k in models.keys() if k != key_to_keep and not k.startswith("clip_")]
+    keys_to_delete = []
+    for k in models.keys():
+        if k == key_to_keep or k.startswith("clip_"):
+            continue
+            
+        # Allow Qwen and V-JEPA to coexist
+        if "Qwen" in key_to_keep and k.startswith("vjepa_"):
+            continue
+        if key_to_keep.startswith("vjepa_") and "Qwen" in k:
+            continue
+            
+        keys_to_delete.append(k)
+        
     if keys_to_delete:
         for k in keys_to_delete:
             print(f"Clearing {k} from VRAM to free space...")
@@ -73,16 +85,22 @@ def clear_other_models(key_to_keep: str):
 def load_qwen_caption_model(device: str, precision: str = "4"):
     key = f"caption_{QWEN_LOCAL_ID}_{device}_{precision}"
     state_key = f"{QWEN_LOCAL_ID}::{device}"
+    
+    # Always clear other models to ensure only the active one is in VRAM
+    clear_other_models(key)
+
     if key not in models:
-        clear_other_models(key)
-        print(f"Loading Qwen2.5-VL-3B ({precision}-bit) from {QWEN_LOCAL_PATH} ...")
+        print(f"Loading Qwen2_5-VL-3B ({precision}-bit) from {QWEN_LOCAL_PATH} ...")
         from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
         
+        # Avoid NaN probabilities during generation by using bfloat16 if hardware supports it
+        compute_dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
+
         quant_cfg = None
         if precision == "4":
             quant_cfg = BitsAndBytesConfig(
                 load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_compute_dtype=compute_dtype,
                 bnb_4bit_use_double_quant=True,
                 bnb_4bit_quant_type="nf4",
             )
@@ -95,12 +113,12 @@ def load_qwen_caption_model(device: str, precision: str = "4"):
         
         model_kwargs = {
             "device_map": "auto",
-            "attn_implementation": "sdpa",
+            # Dropped attn_implementation="sdpa" because it causes NaN logits in float16
         }
         if quant_cfg:
             model_kwargs["quantization_config"] = quant_cfg
         else:
-            model_kwargs["torch_dtype"] = torch.float16
+            model_kwargs["torch_dtype"] = compute_dtype
             
         model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             QWEN_LOCAL_PATH,
@@ -121,8 +139,11 @@ def load_qwen_caption_model(device: str, precision: str = "4"):
 def load_caption_model(model_name: str, device: str):
     key = f"caption_{model_name}_{device}"
     state_key = f"{model_name}::{device}"
+    
+    # Always clear other models to ensure only the active one is in VRAM
+    clear_other_models(key)
+
     if key not in models:
-        clear_other_models(key)
         print(f"Loading {model_name} into VRAM...")
         dev = get_device(device)
         loading_states[state_key] = "loading_processor"
@@ -148,8 +169,11 @@ def load_caption_model(model_name: str, device: str):
 def load_vqa_model(model_name: str, device: str):
     key = f"vqa_{model_name}_{device}"
     state_key = f"{model_name}::{device}"
+    
+    # Always clear other models to ensure only the active one is in VRAM
+    clear_other_models(key)
+
     if key not in models:
-        clear_other_models(key)
         print(f"Loading VQA model {model_name} into VRAM...")
         dev = get_device(device)
         loading_states[state_key] = "loading_processor"
@@ -179,8 +203,11 @@ def load_clip_model(device: str):
 def load_yolo_model(model_name: str, device: str):
     key = f"yolo_{model_name}_{device}"
     state_key = f"{model_name}::{device}"
+    
+    # Always clear other models to ensure only the active one is in VRAM
+    clear_other_models(key)
+    
     if key not in models:
-        clear_other_models(key)
         print(f"Loading YOLO model {model_name} into VRAM...")
         dev = get_device(device)
         loading_states[state_key] = "loading_model"
@@ -198,8 +225,11 @@ def load_yolo_model(model_name: str, device: str):
 def load_grounding_dino_model(model_name: str, device: str):
     key = f"gdino_{model_name}_{device}"
     state_key = f"{model_name}::{device}"
+    
+    # Always clear other models to ensure only the active one is in VRAM
+    clear_other_models(key)
+
     if key not in models:
-        clear_other_models(key)
         print(f"Loading Grounding DINO {model_name} into VRAM...")
         dev = get_device(device)
         loading_states[state_key] = "loading_processor"
@@ -215,8 +245,11 @@ def load_grounding_dino_model(model_name: str, device: str):
 def load_sam_model(model_name: str, device: str):
     key = f"sam_{model_name}_{device}"
     state_key = f"{model_name}::{device}"
+    
+    # Always clear other models to ensure only the active one is in VRAM
+    clear_other_models(key)
+
     if key not in models:
-        clear_other_models(key)
         print(f"Loading SAM {model_name} into VRAM...")
         dev = get_device(device)
         loading_states[state_key] = "loading_processor"
@@ -228,6 +261,18 @@ def load_sam_model(model_name: str, device: str):
             models[key] = (processor, model)
         loading_states[state_key] = "done"
     return models[key]
+
+def load_vjepa_model(model_name: str, device: str):
+    """Thin wrapper — delegates to visionbox.video_analyzer.model."""
+    from visionbox.video_analyzer.model import load_vjepa_model as _load
+    return _load(
+        model_name=model_name,
+        device=device,
+        models=models,
+        loading_states=loading_states,
+        get_device=get_device,
+        clear_other_models=clear_other_models,
+    )
 
 from pydantic import BaseModel
 
@@ -245,8 +290,43 @@ class VQARequest(BaseModel):
     model_name: str = "Salesforce/blip-vqa-base"
     device: str = "cuda"
 
+class VideoClassifyRequest(BaseModel):
+    video_base64: str
+    model_name: str = "facebook/vjepa2-vitl-fpc16-256-ssv2"
+    device: str = "cuda"
+    clip_len: int = 64
+    use_adaptive_step: bool = True
+    use_overlap: bool = True
+    aggregate_clips: bool = True
+
+class VideoSummarizeRequest(BaseModel):
+    video_base64: str
+    # V-JEPA settings
+    vjepa_model_name: str = "facebook/vjepa2-vitl-fpc16-256-ssv2"
+    vjepa_device: str = "cuda"
+    clip_len: int = 64
+    k_clips: int = 3
+    # Qwen settings
+    qwen_device: str = "cuda"
+
+class VideoNarrateRequest(BaseModel):
+    video_base64: str
+    vjepa_model_name: str = "facebook/vjepa2-vitl-fpc16-256-ssv2"
+    vjepa_device: str = "cuda"
+    qwen_device: str = "cuda"
+    clip_len: int = 64
+    sensitivity: float = 0.8
+    cooldown: int = 1
+    merge_gap: int = 3
+
 # State for Smart Detection progress
 smart_detect_state = {}
+
+# State for Video Summarization progress
+summarize_state: dict = {}
+
+# State for Event Narration progress
+narrate_state: dict = {}
 
 class PredictRequest(BaseModel):
     image_base64: str
@@ -283,6 +363,8 @@ async def preload_model(req: PreloadRequest):
     try:
         if req.task == "vqa":
             await asyncio.to_thread(load_vqa_model, req.model_name, req.device)
+        elif req.task == "video":
+            await asyncio.to_thread(load_vjepa_model, req.model_name, req.device)
         elif _is_qwen(req.model_name):
             await asyncio.to_thread(load_qwen_caption_model, req.device, req.precision)
         else:
@@ -294,48 +376,62 @@ async def preload_model(req: PreloadRequest):
 
 @app.post("/api/free-memory")
 async def free_memory():
-    try:
-        # Explicitly delete all references to models
-        for k in list(models.keys()):
-            val = models.pop(k)
-            del val
+    # Explicitly delete all references to models
+    for k in list(models.keys()):
+        val = models.pop(k)
+        del val
+        
+    models.clear()
+    loading_states.clear()
+    
+    # Force garbage collection multiple times if needed
+    import gc
+    gc.collect()
+    gc.collect()
+    
+    import torch
+    if torch.cuda.is_available():
+        # Flush any pending assertion errors so they don't blow up empty_cache
+        try:
+            torch.cuda.synchronize()
+        except Exception:
+            pass
             
-        models.clear()
-        loading_states.clear()
-        
-        # Force garbage collection multiple times if needed
-        gc.collect()
-        gc.collect()
-        
-        if torch.cuda.is_available():
+        try:
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
-            
-        return {"status": "ok", "message": "GPU memory freed successfully."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        except Exception as e:
+            print(f"Warning: Failed to empty CUDA cache (likely stale context): {e}")
+
+    return {"status": "ok", "message": "GPU memory freed successfully."}
 
 @app.get("/api/preload-status")
 async def preload_status(model_name: str, device: str, precision: str = "4"):
     state_key = f"{model_name}::{device}"
-    # If already in models cache, it's done regardless of state
+
+    # Check if model is already cached under any key pattern
     if _is_qwen(model_name):
-        caption_cached = f"caption_{model_name}_{device}_{precision}" in models
+        already_cached = f"caption_{model_name}_{device}_{precision}" in models
     else:
-        caption_cached = f"caption_{model_name}_{device}" in models
-    vqa_cached = f"vqa_{model_name}_{device}" in models
-    if caption_cached or vqa_cached:
+        already_cached = (
+            f"caption_{model_name}_{device}" in models
+            or f"vqa_{model_name}_{device}" in models
+            or f"vjepa_{model_name}_{device}" in models
+        )
+
+    if already_cached:
         return {"stage": "done", "percent": 100, "label": "Ready!"}
+
     stage = loading_states.get(state_key, "idle")
     percent = STAGE_PERCENTAGES.get(stage, 0)
     labels = {
-        "idle":             "Waiting...",
-        "queued":           "Queued...",
-        "loading_processor":"Loading processor...",
-        "loading_model":    "Loading model weights...",
-        "moving_to_device": "Transferring to GPU...",
-        "done":             "Ready!",
-        "error":            "Error!",
+        "idle":              "Waiting...",
+        "queued":            "Queued...",
+        "loading_processor": "Loading processor...",
+        "loading_model":     "Loading model weights...",
+        "moving_to_device":  "Transferring to GPU...",
+        "done":              "Ready!",
+        "error":             "Error!",
     }
     return {"stage": stage, "percent": percent, "label": labels.get(stage, stage)}
 
@@ -496,6 +592,166 @@ async def predict_image(req: PredictRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/video/classify")
+async def classify_video_endpoint(req: VideoClassifyRequest):
+    """
+    Decode the incoming base64 video, write it to a temp file,
+    then delegate to visionbox.video_analyzer.predict.classify_video
+    which uses the smart sampler and aggregated V-JEPA 2 inference.
+    """
+    import tempfile
+    from visionbox.video_analyzer.predict import classify_video as _classify
+
+    try:
+        contents = base64.b64decode(req.video_base64)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        try:
+            predictions = await asyncio.to_thread(
+                _classify,
+                tmp_path,
+                req.model_name,
+                req.device,
+                load_vjepa_model,    # inject shared model cache
+                get_device,          # inject device helper
+                clip_len=req.clip_len,
+                use_adaptive_step=req.use_adaptive_step,
+                use_overlap=req.use_overlap,
+                aggregate_clips=req.aggregate_clips
+            )
+        finally:
+            os.remove(tmp_path)
+
+        return {"predictions": predictions}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/video/summarize")
+async def summarize_video_endpoint(req: VideoSummarizeRequest):
+    """
+    Decode the incoming base64 video, pick key clips using V-JEPA embeddings,
+    and then use Qwen2.5-VL to summarize those frames.
+    Reports progress live via the summarize_state dict.
+    """
+    import tempfile
+    from visionbox.video_analyzer.caption_pipeline import generate_video_summary
+
+    # Reset progress state
+    summarize_state.clear()
+    summarize_state["stage"] = "starting"
+    summarize_state["label"] = "Starting summarization pipeline..."
+    summarize_state["percent"] = 0
+
+    def _progress(label: str, pct: int):
+        summarize_state["label"] = label
+        summarize_state["percent"] = pct
+
+    try:
+        contents = base64.b64decode(req.video_base64)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        try:
+            result = await asyncio.to_thread(
+                generate_video_summary,
+                video_path=tmp_path,
+                vjepa_model_name=req.vjepa_model_name,
+                qwen_device=req.qwen_device,
+                vjepa_device=req.vjepa_device,
+                load_vjepa_fn=load_vjepa_model,
+                load_qwen_fn=load_qwen_caption_model,
+                get_device_fn=get_device,
+                clip_len=req.clip_len,
+                k_clips=req.k_clips,
+                progress_fn=_progress,
+            )
+        finally:
+            os.remove(tmp_path)
+
+        summarize_state["stage"] = "done"
+        summarize_state["label"] = "Done!"
+        summarize_state["percent"] = 100
+        return result
+    except Exception as e:
+        summarize_state["stage"] = "error"
+        summarize_state["label"] = str(e)
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/video/summarize-status")
+async def summarize_video_status():
+    """Returns the current progress status of the active summarization."""
+    if not summarize_state:
+        return {"stage": "idle", "percent": 0, "label": "Waiting..."}
+    return summarize_state
+
+@app.post("/api/video/narrate")
+async def narrate_video_endpoint(req: VideoNarrateRequest):
+    """
+    Event-driven video narration:
+    V-JEPA 2 detects WHEN → Qwen2.5-VL describes WHAT.
+    """
+    import tempfile
+    from visionbox.video_analyzer.caption_pipeline import narrate_video
+
+    narrate_state.clear()
+    narrate_state["stage"] = "starting"
+    narrate_state["label"] = "Starting event narration pipeline..."
+    narrate_state["percent"] = 0
+
+    def _progress(label: str, pct: int):
+        narrate_state["label"] = label
+        narrate_state["percent"] = pct
+
+    try:
+        contents = base64.b64decode(req.video_base64)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        try:
+            result = await asyncio.to_thread(
+                narrate_video,
+                video_path=tmp_path,
+                vjepa_model_name=req.vjepa_model_name,
+                vjepa_device=req.vjepa_device,
+                load_vjepa_fn=load_vjepa_model,
+                load_qwen_fn=load_qwen_caption_model,
+                get_device_fn=get_device,
+                qwen_device=req.qwen_device,
+                clip_len=req.clip_len,
+                sensitivity=req.sensitivity,
+                cooldown=req.cooldown,
+                merge_gap=req.merge_gap,
+                progress_fn=_progress,
+            )
+        finally:
+            os.remove(tmp_path)
+
+        narrate_state["stage"] = "done"
+        narrate_state["label"] = "Done!"
+        narrate_state["percent"] = 100
+        return {"result": result}
+    except Exception as e:
+        narrate_state["stage"] = "error"
+        narrate_state["label"] = str(e)
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/video/narrate-status")
+async def narrate_video_status():
+    """Returns the current progress status of the active narration."""
+    if not narrate_state:
+        return {"stage": "idle", "percent": 0, "label": "Waiting..."}
+    return narrate_state
+
 @app.post("/api/detect")
 async def detect_objects(req: DetectRequest):
     try:
@@ -554,3 +810,35 @@ async def get_smart_detect_status():
     if not smart_detect_state:
         return {"stage": "idle", "percent": 0, "label": "Waiting..."}
     return smart_detect_state
+
+@app.get("/api/video/available-models")
+async def list_available_video_models():
+    """
+    Scans the V_JEPA2/ directory for subdirectories containing config.json.
+    Returns a list of model objects for the frontend.
+    The 'id' field is exactly what will be passed to load_vjepa_model() as model_name.
+    """
+    from visionbox.video_analyzer.model import _LOCAL_MODEL_DIR
+
+    results = []
+
+    if os.path.isdir(_LOCAL_MODEL_DIR):
+        for item in sorted(os.listdir(_LOCAL_MODEL_DIR)):
+            item_path = os.path.join(_LOCAL_MODEL_DIR, item)
+            if os.path.isdir(item_path) and os.path.exists(os.path.join(item_path, "config.json")):
+                # id = the folder name, which is what model.py uses to find it in V_JEPA2/
+                results.append({
+                    "id": item,
+                    "name": f"Local: {item}",
+                    "is_local": True
+                })
+
+    # If no local models found, offer the default HF model as a fallback
+    if not results:
+        results.append({
+            "id": "facebook/vjepa2-vitl-fpc16-256-ssv2",
+            "name": "V-JEPA 2 ViT-L (Hugging Face)",
+            "is_local": False
+        })
+
+    return {"models": results}

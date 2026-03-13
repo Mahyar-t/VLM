@@ -23,6 +23,7 @@ dependencies = [
   "qwen-vl-utils",
   "bitsandbytes",
   "accelerate",
+  "av",
 ]
 
 [project.optional-dependencies]
