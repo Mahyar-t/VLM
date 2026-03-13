@@ -7,7 +7,7 @@ def run_cmd(cmd, cwd=None):
     print(f"Running: {cmd}")
     subprocess.check_call(cmd, shell=True, cwd=cwd)
 
-def setup_colab(token):
+def setup_colab(token, port):
     # 1. Install pyngrok
     run_cmd("pip install pyngrok --quiet")
     from pyngrok import ngrok
@@ -32,8 +32,8 @@ def setup_colab(token):
     run_cmd("mvn clean package -DskipTests", cwd=webapp_dir)
 
     # 5. Start Tunnel
-    print("🌐 Starting ngrok tunnel...")
-    public_url = ngrok.connect(8080).public_url
+    print(f"🌐 Starting ngrok tunnel on port {port}...")
+    public_url = ngrok.connect(port).public_url
     print("\n" + "="*50)
     print(f"🚀 YOUR WEBSITE IS LIVE AT: {public_url}")
     print("="*50 + "\n")
@@ -42,11 +42,12 @@ def setup_colab(token):
     print("🎬 Starting NiluLab...")
     os.environ["PYTHON_EXECUTABLE"] = "python3"
     jar_path = os.path.join(webapp_dir, "target", "visionbox-api-0.1.0.jar")
-    run_cmd(f"java -jar {jar_path}")
+    run_cmd(f"java -jar {jar_path} --server.port={port}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="NiluLab Colab Setup")
     parser.add_argument("--token", help="ngrok authtoken")
+    parser.add_argument("--port", type=int, default=8080, help="Port to run the webapp on (default: 8080)")
     args = parser.parse_args()
     
-    setup_colab(args.token)
+    setup_colab(args.token, args.port)

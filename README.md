@@ -41,8 +41,11 @@ If you don't have a local GPU, you can run NiluLab for free using Google Colab a
 ```python
 !git clone https://github.com/Mahyar-t/VLM.git
 %cd VLM
-!python3 scripts/colab_setup.py --token YOUR_NGROK_AUTHTOKEN
+!python3 scripts/colab_setup.py --token YOUR_NGROK_AUTHTOKEN --port 8080
 ```
+
+> [!TIP]
+> You can change the `--port` argument if you need to run on a different port than `8080`.
 
 ---
 
