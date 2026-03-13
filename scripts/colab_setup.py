@@ -18,14 +18,24 @@ def setup_colab(token):
     else:
         print("⚠️ No ngrok token provided. You might be limited.")
 
+    # 2. System Dependencies
+    print("📦 Installing system dependencies...")
+    run_cmd("apt-get update -y && apt-get install -y openjdk-17-jdk-headless maven libgl1-mesa-glx python3-pip git psmisc lsof")
+
     # 1.5 Cleanup existing ports
     print("🧹 Cleaning up port 8080 and 8000...")
     run_cmd("fuser -k 8080/tcp || true")
     run_cmd("fuser -k 8000/tcp || true")
-
-    # 2. System Dependencies
-    print("📦 Installing system dependencies...")
-    run_cmd("apt-get update -y && apt-get install -y openjdk-17-jdk-headless maven libgl1-mesa-glx python3-pip git")
+    
+    # Python backup cleanup just in case
+    import psutil
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            for conn in proc.connections(kind='inet'):
+                if conn.laddr.port in [8000, 8080]:
+                    proc.kill()
+        except Exception:
+            pass
 
     # 3. Python Dependencies
     print("🐍 Installing Python dependencies...")
