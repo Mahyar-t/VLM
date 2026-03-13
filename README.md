@@ -29,6 +29,23 @@ The easiest way to get NiluLab up and running is using Docker. This handles all 
 
 ---
 
+## 🚀 Run on Google Colab (Free T4 GPU)
+
+If you don't have a local GPU, you can run NiluLab for free using Google Colab and ngrok.
+
+1.  Open [colab.new](https://colab.new).
+2.  Go to **Runtime > Change runtime type** and select **T4 GPU**.
+3.  Get your free ngrok token at [dashboard.ngrok.com](https://dashboard.ngrok.com/get-started/your-authtoken).
+4.  Run the following in a Colab cell:
+
+```python
+!git clone https://github.com/Mahyar-t/VLM.git
+%cd VLM
+!python3 scripts/colab_setup.py --token YOUR_NGROK_AUTHTOKEN
+```
+
+---
+
 ## Manual Installation
 
 ### 1. Prerequisites
