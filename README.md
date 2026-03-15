@@ -4,7 +4,7 @@ NiluLab is a Computer Vision platform that provides a practical web interface an
 
 ---
 
-## 🐳 Quick Start with Docker (Recommended)
+## Quick Start with Docker (Recommended)
 
 The easiest way to get NiluLab up and running is using Docker. This handles all dependencies (Java, Python, CUDA) in a single container.
 
@@ -29,7 +29,7 @@ The easiest way to get NiluLab up and running is using Docker. This handles all 
 
 ---
 
-## 🚀 Run on Google Colab (Free T4 GPU)
+## Run on Google Colab (Free T4 GPU)
 
 If you don't have a local GPU, you can run NiluLab for free using Google Colab and ngrok.
 
@@ -44,7 +44,7 @@ If you don't have a local GPU, you can run NiluLab for free using Google Colab a
 !python3 scripts/colab_setup.py --token YOUR_NGROK_AUTHTOKEN --port 8080
 ```
 
-### 💎 Persistence & Secrets (One-Click Launch)
+### Persistence & Secrets (One-Click Launch)
 
 To avoid re-entering your token or re-downloading large models:
 
