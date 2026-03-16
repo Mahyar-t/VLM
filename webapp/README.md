@@ -33,15 +33,16 @@ If you prefer to download it manually before starting the app to avoid long load
 You can also visit the official repository directly to view the model, read its documentation, or manually pull the files:
 👉 [https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/tree/main)
 
-If you use this method, you must download all the files and place them inside a folder named `Qwen/Qwen2.5-VL-3B-Instruct` exactly in the **root of the repository**, next to the `webapp` directory. The application will automatically detect this folder and load from it instead of downloading.
+If you use this method, you must download all the files and place them inside a folder named `models/Qwen/Qwen2.5-VL-3B-Instruct` exactly in the **root of the repository**, next to the `webapp` directory. The application will automatically detect this folder and load from it instead of downloading.
 
 Your folder structure should look like this:
 
 ```text
 VLM/
 ├── webapp/
-├── Qwen/
-│   ├── Qwen2.5-VL-3B-Instruct/
+├── models/
+│   └── Qwen/
+│       ├── Qwen2.5-VL-3B-Instruct/
 │   │   ├── config.json
 │   │   ├── model.safetensors
 │   │   └── ... (other model files)

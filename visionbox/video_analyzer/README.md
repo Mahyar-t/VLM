@@ -29,9 +29,9 @@ The summarization process flows through the following stages:
 
 To ensure offline availability and speed, `model.py` follows a strict resolution hierarchy for V-JEPA models:
 
-1. **Specific Local Folder Match**: E.g., `V_JEPA2/V-JEPA2-ViT-L-fpc16-300M`
-2. **Fallback to First Available**: If the UI requests the HF default, but the local `V_JEPA2/` root contains an alternative valid model, it picks the first local option automatically to save bandwidth.
-3. **Hugging Face Hub**: Only downloads if the local `V_JEPA2` directory is empty or missing.
+1. **Specific Local Folder Match**: E.g., `models/V_JEPA2/V-JEPA2-ViT-L-fpc16-300M`
+2. **Fallback to First Available**: If the UI requests the HF default, but the local `models/V_JEPA2/` root contains an alternative valid model, it picks the first local option automatically to save bandwidth.
+3. **Hugging Face Hub**: Only downloads if the local `models/V_JEPA2` directory is empty or missing.
 
 ## Memory & Hardware Stability
 

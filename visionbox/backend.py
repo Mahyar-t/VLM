@@ -25,9 +25,9 @@ from transformers import (
 QWEN_LOCAL_ID  = "local::Qwen2.5-VL-3B"
 _QWEN_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)),
-    "Qwen/Qwen2.5-VL-3B-Instruct"
+    "models/Qwen/Qwen2.5-VL-3B-Instruct"
 )
-QWEN_LOCAL_PATH = _QWEN_DIR if os.path.exists(_QWEN_DIR) else "Qwen/Qwen2.5-VL-3B-Instruct"
+QWEN_LOCAL_PATH = _QWEN_DIR if os.path.exists(_QWEN_DIR) else "models/Qwen/Qwen2.5-VL-3B-Instruct"
 
 from visionbox.utils import get_device
 

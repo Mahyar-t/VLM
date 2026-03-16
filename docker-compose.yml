@@ -6,7 +6,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./Qwen:/app/Qwen
+      - ./models/Qwen:/app/models/Qwen
+      - ./models/V_JEPA2:/app/models/V_JEPA2
       - ~/.cache/huggingface:/root/.cache/huggingface
     deploy:
       resources:

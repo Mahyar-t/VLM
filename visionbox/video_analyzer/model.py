@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Project root relative to this file (visionbox/video_analyzer/model.py → ../../)
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_LOCAL_MODEL_DIR = os.path.join(_PROJECT_ROOT, "V_JEPA2")
+_LOCAL_MODEL_DIR = os.path.join(_PROJECT_ROOT, "models", "V_JEPA2")
 
 
 def load_vjepa_model(
