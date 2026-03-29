@@ -56,7 +56,7 @@ The Java application automatically starts the Python Uvicorn server in the backg
 cd /home/mahyart/Desktop/github_repos/VLM/webapp
 
 # run the spring boot app
-kill -9 $(lsof -t -i:8000)
+kill -9 $(lsof -t -i:8081)
 mvn spring-boot:run
 ```
 
@@ -64,7 +64,7 @@ mvn spring-boot:run
 
 Once the server says "Started Application", open your web browser and navigate to:
 
-👉 **http://localhost:8080**
+👉 **http://localhost:8081**
 
 From the dashboard, you can access all of the application's features through the sidebar:
 
